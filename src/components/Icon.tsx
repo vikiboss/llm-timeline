@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { ICONS } from '../data/icons'
-import { readableColor } from '../lib/color'
+import { inkColor } from '../lib/color'
 
 interface IconProps {
   /** icons.ts 中的 key，例如 openai / claude-color / kimi */
@@ -15,7 +15,7 @@ interface IconProps {
   title?: string
 }
 
-const DEFAULT_TINT = 'rgb(245 245 245)'
+const DEFAULT_TINT = 'rgb(21 23 26)'
 
 function resolve(name: string, preferColor: boolean): string | undefined {
   if (ICONS[name]) {
@@ -55,7 +55,7 @@ export function Icon({
         style={{ width: size, height: size }}
         aria-hidden="true"
       >
-        <span className="block h-full w-full rounded-[2px] bg-white/15" />
+        <span className="block h-full w-full rounded-xs bg-[var(--sunken-2)]" />
       </span>
     )
   }
@@ -67,14 +67,14 @@ export function Icon({
       style={{
         width: size,
         height: size,
-        color: markup.mono ? readableColor(color ?? DEFAULT_TINT, 0.62) : undefined,
+        color: markup.mono ? inkColor(color ?? DEFAULT_TINT, 0.4) : undefined,
       }}
       dangerouslySetInnerHTML={{ __html: markup.html }}
     />
   )
 }
 
-/** 圆角品牌图标底座 */
+/** 品牌图标底座：纯白圆角方块 + hairline 边框，扁平无阴影 */
 export function IconBadge({
   name,
   size = 40,
@@ -90,7 +90,7 @@ export function IconBadge({
 }) {
   return (
     <span
-      className={`inline-flex flex-none items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] ${className}`}
+      className={`inline-flex flex-none items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--card)] ${className}`}
       style={{ width: size, height: size }}
     >
       <Icon

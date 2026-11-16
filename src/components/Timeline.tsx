@@ -1,35 +1,31 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { TimelineCard } from './TimelineCard'
 import { LEVEL_STYLES } from './tokens'
+import { Button, Pill } from './ui'
 import type { Company, Model, MonthGroup } from '../types'
 import { formatDate } from '../lib/timeline'
 
 interface TimelineProps {
   groups: MonthGroup[]
   companyOf: (id: string) => Company | undefined
-  referenceDate: string
   onSelect: (model: Model) => void
   onReset: () => void
-  totalModels: number
-  /** 吸顶栏渲染钩子：把「当前月份」交还给上层年份条，两者共用一条吸顶层 */
   renderNav: (props: { retracted: boolean; activeMonth?: MonthGroup }) => React.ReactNode
 }
 
-export function Timeline({
-  groups,
-  companyOf,
-  referenceDate,
-  onSelect,
-  onReset,
-  totalModels,
-  renderNav,
-}: TimelineProps) {
-  // 滚动方向 → 收起吸顶年份条（手机省高度）。只在这里维护一份状态，
-  // 年份条与月份标签都从它派生，结构上不会出现「两层之间空一截」。
+/**
+ * 时间轴：一条中轴上挂着按月的档案卡。
+ *
+ * 中轴是一条「由页面在替你写字」：向下滚动时，上方部分被墨填满，
+ * 即视口当前阅读位置以下仍是空轴。读者不看数字也知道读到哪。
+ * 这条进度轴用 scroll 事件直接写 CSS 变量，不触发 React 重渲染。
+ */
+export function Timeline({ groups, companyOf, onSelect, onReset, renderNav }: TimelineProps) {
   const [retracted, setRetracted] = useState(false)
   const [activeKey, setActiveKey] = useState<string | null>(groups[0]?.key ?? null)
+  const listRef = useRef<HTMLDivElement>(null)
 
-  // 只在窄屏收起：桌面端年份条是常驻导航，收起反而让月份标签悬空
+  // 窄屏滚动向下时收起年份条，把高度让给内容
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 1023px)')
     let lastY = window.scrollY
@@ -41,7 +37,7 @@ export function Timeline({
       const y = window.scrollY
       const delta = y - lastY
       if (Math.abs(delta) < 8) return
-      setRetracted(delta > 0 && y > 200)
+      setRetracted(delta > 0 && y > 220)
       lastY = y
     }
     const onChange = () => setRetracted(false)
@@ -53,7 +49,31 @@ export function Timeline({
     }
   }, [])
 
-  // 当前月份：进入视口最靠上的那个月份标签
+  // 墨线进度：写到 CSS 变量 --spine-fill（0–1），避免逐帧 React 更新
+  useEffect(() => {
+    const el = listRef.current
+    if (!el) return
+    let raf = 0
+    const update = () => {
+      raf = 0
+      const r = el.getBoundingClientRect()
+      const anchor = window.innerHeight * 0.45
+      const pct = Math.min(1, Math.max(0, (anchor - r.top) / Math.max(1, r.height)))
+      el.style.setProperty('--spine-fill', pct.toFixed(4))
+    }
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [groups])
+
   useEffect(() => {
     if (groups.length === 0) return
     const nodes = groups
@@ -67,112 +87,110 @@ export function Timeline({
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
         if (top) setActiveKey(top.target.id.replace('month-', ''))
       },
-      { rootMargin: '-40% 0px -55% 0px', threshold: 0 },
+      { rootMargin: '-40% 0px -52% 0px', threshold: 0 },
     )
     for (const n of nodes) io.observe(n)
     return () => io.disconnect()
   }, [groups])
 
   const activeMonth = groups.find((g) => g.key === activeKey)
+
   if (groups.length === 0) {
-    // 空状态不再用视口高度占位（46vh 与有结果时差异过大，会让上方内容突然“变短”），
-    // 改为固定像素高度，与一屏时间轴大致相当。
     return (
-      <div className="flex min-h-[560px] flex-col items-center justify-center rounded-sm border border-dashed border-[var(--line-2)] px-6 py-16 text-center">
-        <p className="text-[13px] text-[var(--fg-2)]">没有符合条件的发布</p>
-        <p className="mt-1 text-[11.5px] text-[var(--fg-4)]">试试放宽公司、分级或输入类型</p>
-        <button
-          type="button"
-          onClick={onReset}
-          className="mt-4 cursor-pointer rounded-xs border border-[var(--line-2)] px-2.5 py-1 text-[11.5px] text-[var(--fg-2)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
-        >
+      <div className="flex min-h-[480px] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--line-2)] bg-[var(--card)] px-6 py-16 text-center">
+        <span className="grid h-11 w-11 place-items-center rounded-lg bg-[var(--sunken)] text-[var(--ink-4)]">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 7h16M4 12h10M4 17h13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+        </span>
+        <p className="mt-3 text-[14px] font-medium text-[var(--ink)]">没有符合条件的发布</p>
+        <p className="mt-1 text-[12px] text-[var(--ink-3)]">试试放宽公司、分级或输入类型</p>
+        <Button onClick={onReset} tone="ink" className="mt-4">
           重置筛选
-        </button>
+        </Button>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-5">
       {renderNav({ retracted, activeMonth })}
-      {groups.map((group) => {
-        const flagship = group.events.filter((e) => e.level === 'flagship').length
-        const major = group.events.filter((e) => e.level === 'major').length
-        return (
-          <section
-            key={group.key}
-            id={`month-${group.key}`}
-            aria-labelledby={`month-label-${group.key}`}
-            style={{ scrollMarginTop: 'calc(var(--sticky-top) + 32px)' }}
-          >
-            {/* 月份刻度：桌面吸顶在年份条下方；手机不吸顶（当前月份已在年份条右侧显示），
-                避免出现「年份条收起、月份标签仍悬空」的空档。 */}
-            <div className="relative z-10 -mx-1 flex items-center gap-2 bg-[var(--bg)] px-1 py-1 lg:sticky lg:top-[var(--sticky-top)] lg:gap-2.5 lg:bg-[var(--bg)]/94 lg:py-1.5 lg:backdrop-blur-sm">
-              <span
-                className="h-2 w-2 flex-none rounded-xs"
-                style={{
-                  background: flagship > 0 ? LEVEL_STYLES.flagship.signal : 'var(--lv-minor)',
-                }}
-              />
-              <h2
-                id={`month-label-${group.key}`}
-                className="text-[12.5px] font-semibold tracking-tight text-white tabular-nums sm:text-[13.5px]"
-              >
-                {group.label}
-              </h2>
-              <span className="font-mono text-[10.5px] text-[var(--fg-4)] tabular-nums">
-                {String(group.events.length).padStart(2, '0')}
-              </span>
-              {flagship > 0 && (
-                <span
-                  className="rounded-xs border px-1 py-px text-[9.5px] font-medium"
-                  style={{
-                    borderColor: LEVEL_STYLES.flagship.chipBorder,
-                    background: LEVEL_STYLES.flagship.chipBg,
-                    color: LEVEL_STYLES.flagship.chipText,
-                  }}
-                >
-                  {flagship} 旗舰
-                </span>
-              )}
-              {major > 0 && (
-                <span
-                  className="rounded-xs border px-1 py-px text-[9.5px] font-medium"
-                  style={{
-                    borderColor: LEVEL_STYLES.major.chipBorder,
-                    background: LEVEL_STYLES.major.chipBg,
-                    color: LEVEL_STYLES.major.chipText,
-                  }}
-                >
-                  {major} 重要
-                </span>
-              )}
-              <span className="ml-auto hidden font-mono text-[10px] text-[var(--fg-4)] tabular-nums sm:inline">
-                {formatDate(group.events[group.events.length - 1].releaseDate)} —{' '}
-                {formatDate(group.events[0].releaseDate)}
-              </span>
-            </div>
 
-            <ol className="mt-1.5 flex flex-col gap-1.5 border-l border-[var(--line)] pl-3">
-              {group.events.map((model) => (
-                <li key={model.id}>
-                  <TimelineCard
-                    model={model}
-                    company={companyOf(model.company)}
-                    referenceDate={referenceDate}
-                    onSelect={onSelect}
-                  />
-                </li>
-              ))}
-            </ol>
-          </section>
-        )
-      })}
+      <div ref={listRef} className="relative pl-[18px] sm:pl-[26px]">
+        {/* 中轴：槽 + 墨 */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-2 bottom-0 left-[3px] w-[2px] overflow-hidden rounded-full bg-[var(--line)] sm:left-[5px]"
+        >
+          <div
+            className="w-full rounded-full bg-[var(--ink)] transition-[height] duration-150 ease-out"
+            style={{ height: 'calc(var(--spine-fill, 0) * 100%)' }}
+          />
+        </div>
 
-      <div className="flex items-center gap-2 border-t border-[var(--line)] pt-4 font-mono text-[10.5px] text-[var(--fg-4)]">
-        <span className="h-1.5 w-1.5 rounded-xs bg-[var(--fg-4)]" />
-        <span>时间轴起点</span>
-        <span className="ml-auto tabular-nums">{totalModels} events</span>
+        {groups.map((group, gi) => {
+          const flagship = group.events.filter((e) => e.level === 'flagship').length
+          const major = group.events.filter((e) => e.level === 'major').length
+          return (
+            <section
+              key={group.key}
+              id={`month-${group.key}`}
+              aria-labelledby={`month-label-${group.key}`}
+              style={{ scrollMarginTop: 'calc(var(--sticky-top) + 20px)' }}
+              className={gi > 0 ? 'mt-5' : ''}
+            >
+              {/* 月份刻度：节点 + 标题，桌面吸顶 */}
+              <div className="relative z-10 -ml-[18px] flex items-center gap-2 bg-[var(--paper)] pt-2.5 pb-2 pl-[18px] sm:-ml-[26px] sm:pl-[26px] lg:sticky lg:top-[var(--sticky-top)]">
+                {/* 吸顶时的纸色遮罩：允许卡片从下方滑过而不透出 */}
+                <span aria-hidden="true" className="absolute inset-y-0 right-0 -left-[18px] -z-10 bg-[var(--paper)] sm:-left-[26px]" />
+                <span
+                  className="absolute top-1/2 left-[4px] h-2.5 w-2.5 -translate-y-1/2 rounded-full border-2 border-[var(--paper)] sm:left-[6px]"
+                  style={{
+                    background: flagship > 0 ? 'var(--ink)' : 'var(--line-2)',
+                    boxShadow: '0 0 0 1px var(--line-2)',
+                  }}
+                />
+                <h2
+                  id={`month-label-${group.key}`}
+                  className="tnum text-[13.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]"
+                >
+                  {group.label}
+                </h2>
+                <Pill>{group.events.length}</Pill>
+                {flagship > 0 && (
+                  <span
+                    className="rounded-xs px-1.5 py-px text-[9.5px] font-semibold text-white"
+                    style={{ background: LEVEL_STYLES.flagship.signal }}
+                  >
+                    {flagship} 旗舰
+                  </span>
+                )}
+                {major > 0 && (
+                  <span className="rounded-xs border border-[var(--line-2)] px-1.5 py-px text-[9.5px] font-medium text-[var(--ink-3)]">
+                    {major} 重要
+                  </span>
+                )}
+                <span className="tnum ml-auto hidden font-mono text-[10px] text-[var(--ink-4)] sm:inline">
+                  {formatDate(group.events[group.events.length - 1].releaseDate)} —{' '}
+                  {formatDate(group.events[0].releaseDate)}
+                </span>
+              </div>
+
+              <ol className="mt-1 flex flex-col gap-1.5">
+                {group.events.map((model) => (
+                  <li key={model.id}>
+                    <TimelineCard
+                      model={model}
+                      company={companyOf(model.company)}
+                      onSelect={onSelect}
+                    />
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )
+        })}
+
       </div>
     </div>
   )

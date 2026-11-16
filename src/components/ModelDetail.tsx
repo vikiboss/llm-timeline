@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Icon } from './Icon'
 import { ModalityChip } from './ModalityIcon'
-import { CATEGORY_META, LEVEL_STYLES } from './tokens'
+import { categoryOf, LEVEL_STYLES } from './tokens'
+import { Close } from './ui'
 import type { Company, Model } from '../types'
-import { daysSince, formatFullDate, relativeTime } from '../lib/timeline'
-import { blendedCost, formatCostUSD, getAnchorCost, tierOf } from '../lib/price'
+import { daysSince, relativeTime } from '../lib/timeline'
+import { blendedCost, formatCostUSD, formatMultiplier, getAnchorCost, tierOf } from '../lib/price'
 import { allModels, companyLabel } from '../lib/data'
 
-/** 同厂商最接近的前后两次发布，帮助把单个模型放回自家演进脉络里 */
 function neighbors(model: Model) {
   const sibs = allModels
     .filter((m) => m.company === model.company && m.id !== model.id && m.category === 'chat')
@@ -22,249 +22,309 @@ interface ModelDetailProps {
   company?: Company
   referenceDate: string
   onClose: () => void
+  onSelect?: (model: Model) => void
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+/** 字段名：等宽小字 + 宽字距，像档案页的栏头。 */
+function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[72px_1fr] items-start gap-3 py-2">
-      <dt className="pt-px text-[11.5px] text-[var(--fg-4)]">{label}</dt>
-      <dd className="min-w-0 text-[12.5px] text-[var(--fg)]">{children}</dd>
+    <dt className="font-mono text-[9.5px] leading-none font-medium tracking-[0.16em] text-[var(--ink-4)] uppercase">
+      {children}
+    </dt>
+  )
+}
+
+/** 价格：分「结论 → 单价 → 参照」三层，读数本身用大字。 */
+function PriceBlock({ model }: { model: Model }) {
+  const cost = blendedCost(model)
+  const anchor = getAnchorCost(allModels)
+  if (cost === null || !anchor || !model.cost) {
+    return <p className="text-[12.5px] text-[var(--ink-4)]">未公开定价</p>
+  }
+  const tier = tierOf(cost / anchor)
+  return (
+    <div className="flex flex-col gap-2.5">
+      {/* 结论：档位 + 倍数，一句话说清贵不贵 */}
+      <div className="flex items-baseline gap-2">
+        <span className="text-[13px] font-semibold" style={{ color: tier.color }}>
+          {tier.label}
+        </span>
+        <span className="tnum font-mono text-[11px] text-[var(--ink-3)]">
+          {formatMultiplier(cost / anchor)} 基准
+        </span>
+      </div>
+
+      {/* 单价表：输入 / 输出并排，数字右对齐，方便纵向比较 */}
+      <div className="grid grid-cols-2 gap-x-4 rounded-sm bg-[var(--sunken)] px-3 py-2">
+        {[
+          ['输入', model.cost.input],
+          ['输出', model.cost.output],
+        ].map(([label, v], i) => (
+          <div key={label as string} className={i === 0 ? 'border-r border-[var(--line)] pr-4' : ''}>
+            <span className="block text-[9.5px] tracking-[0.1em] text-[var(--ink-4)]">{label}</span>
+            <span className="tnum font-mono text-[15px] leading-tight font-semibold text-[var(--ink)]">
+              ${v}
+            </span>
+          </div>
+        ))}
+        <span className="col-span-2 mt-1.5 border-t border-[var(--line)] pt-1.5 text-[9.5px] text-[var(--ink-4)]">
+          USD / 百万 token · 混合成本约 {formatCostUSD(cost)}
+        </span>
+      </div>
     </div>
   )
 }
 
-/** 价格档位 + 中文相对描述，缺价时如实留空 */
-function PriceCell({ model }: { model: Model }) {
-  const cost = blendedCost(model)
-  const anchor = getAnchorCost(allModels)
-  if (cost === null || !anchor) {
-    return <span className="text-[var(--fg-4)]">未公开</span>
-  }
-  const mult = cost / anchor
-  const tier = tierOf(mult)
-  const { input, output } = model.cost!
+/** 代际导航：页脚里左右各占一半，是看完一个模型后最自然的去向。 */
+function NavHalf({
+  model,
+  dir,
+  onSelect,
+}: {
+  model: Model
+  dir: 'prev' | 'next'
+  onSelect: (m: Model) => void
+}) {
   return (
-    <span className="flex flex-col gap-1">
-      <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span
-          className="inline-flex items-center gap-1 rounded-xs px-1.5 py-0.5 font-mono text-[11px] font-semibold"
-          style={{ background: `color-mix(in srgb, ${tier.color} 16%, transparent)`, color: tier.color }}
-        >
-          {tier.symbol}
-          <span className="font-sans text-[10.5px] font-medium">{tier.label}</span>
+    <button
+      type="button"
+      onClick={() => onSelect(model)}
+      title={`${model.name} · ${model.releaseDate}`}
+      className={`group flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 px-4 py-3 transition-colors hover:bg-[var(--sunken)] sm:px-5 ${
+        dir === 'next' ? 'flex-row-reverse text-right' : ''
+      }`}
+    >
+      {/* 左段：箭头 + 上一代/下一代，二者横排 */}
+      <span className="flex flex-none items-center gap-1.5 text-[var(--ink-4)]">
+        <span className="font-mono text-[12px] leading-none transition-transform group-hover:-translate-x-0.5">
+          {dir === 'prev' ? '←' : '→'}
         </span>
-        <span className="text-[11.5px] font-medium" style={{ color: tier.color }}>
-          {tier.relative}
+        <span className="text-[10px] leading-none tracking-[0.1em] whitespace-nowrap">
+          {dir === 'prev' ? '上一代' : '下一代'}
         </span>
       </span>
-      <span className="font-mono text-[10.5px] tabular-nums text-[var(--fg-4)]">
-        ${input} / ${output} 每百万 token · 约 {formatCostUSD(cost)} 混合成本
+
+      {/* 中段：模型名在上，时间在下，竖向排列 */}
+      <span className={`flex min-w-0 flex-1 flex-col gap-[3px] ${dir === 'next' ? 'items-end' : 'items-start'}`}>
+        <span className="truncate text-[12px] leading-tight font-medium text-[var(--ink-2)] group-hover:text-[var(--ink)]">
+          {model.name}
+        </span>
+        <span className="tnum font-mono text-[9.5px] leading-tight text-[var(--ink-4)]">
+          {model.releaseDate.slice(0, 7).replace('-', '.')}
+        </span>
       </span>
-    </span>
+    </button>
   )
 }
 
-export function ModelDetail({ model, company, referenceDate, onClose }: ModelDetailProps) {
-  const [shareState, setShareState] = useState<string | null>(null)
+/**
+ * 详情：一张展开的档案卡。
+ * 桌面是「左身份 / 右规格」的双栏；手机是单栏，从底部升起。
+ */
+export function ModelDetail({ model, company, referenceDate, onClose, onSelect }: ModelDetailProps) {
+  const [copiedFor, setCopiedFor] = useState<string | null>(null)
+
   useEffect(() => {
     if (!model) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+
+    // 锁定滚动时补上滚动条占位，否则页面会向右跳一格
+    const body = document.body
+    const prev = { overflow: body.style.overflow, paddingRight: body.style.paddingRight }
+    const gap = window.innerWidth - document.documentElement.clientWidth
+    body.style.overflow = 'hidden'
+    if (gap > 0) body.style.paddingRight = `${gap}px`
+
     return () => {
       window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prev
+      body.style.overflow = prev.overflow
+      body.style.paddingRight = prev.paddingRight
     }
   }, [model, onClose])
 
   if (!model) return null
 
   const level = LEVEL_STYLES[model.level]
-  const category = CATEGORY_META[model.category]
+  const cat = categoryOf(model.category)
   const { prev, next } = neighbors(model)
   const days = daysSince(model.releaseDate, referenceDate)
-  // 深链：把当前模型写进 URL，方便贴给同事
+  const [year, month, day] = model.releaseDate.split('-')
+
   const share = async () => {
     const url = `${window.location.href.split('#')[0]}#model=${model.id}`
     try {
       await navigator.clipboard.writeText(url)
-      setShareState('已复制')
+      setCopiedFor(model.id)
     } catch {
-      setShareState(url)
+      setCopiedFor(null)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
       <button
         type="button"
         aria-label="关闭"
         onClick={onClose}
-        className="absolute inset-0 cursor-default bg-black/75"
+        className="absolute inset-0 cursor-default bg-[var(--ink)]/25 backdrop-blur-[2px]"
       />
-      {/* 手机：底部抽屉，最高 92vh 且内部可滚，长备注不会顶出屏幕；桌面：居中卡片 */}
+
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="model-detail-title"
-        className="animate-fade-in relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-md border border-[var(--line-2)] bg-[var(--surface)] sm:max-h-[85vh] sm:m-4 sm:max-w-md sm:rounded-md"
+        className="animate-sheet-up relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-xl border border-[var(--line-ink)] bg-[var(--card)] sm:max-h-[86vh] sm:w-full sm:max-w-[760px] sm:rounded-xl"
       >
-        {/* 顶部分级色条 */}
-        <span className="block h-[3px] w-full" style={{ background: level.signal }} />
+        <div className="flex justify-center pt-2 pb-1 sm:hidden">
+          <span className="h-1 w-9 rounded-full bg-[var(--line-2)]" />
+        </div>
 
-        <div className="min-h-0 overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <div className="flex items-start gap-3">
-            <span
-              className="inline-flex flex-none items-center justify-center rounded-sm border border-[var(--line-2)] bg-[var(--surface-2)]"
-              style={{ width: 46, height: 46 }}
-            >
-              <Icon
-                name={model.icon ?? company?.icon ?? 'openai'}
-                size={27}
-                color={company?.color}
-                preferColor
-              />
+        {/* 头部：整卡唯一带色带的位置，标明等级；右侧常驻关闭 */}
+        <div className="relative flex-none border-b border-[var(--line)]">
+          <span className="absolute inset-x-0 top-0 h-[3px]" style={{ background: level.signal }} aria-hidden="true" />
+          <div className="flex items-center justify-between px-4 pt-3 pb-2.5 sm:px-6 sm:pt-3.5 sm:pb-3">
+            <span className="flex items-center gap-2">
+              <span
+                className="rounded-xs px-1.5 py-[3px] text-[9.5px] font-semibold"
+                style={{ background: level.chipBg, color: level.chipText, border: `1px solid ${level.chipBorder}` }}
+              >
+                {level.label}
+              </span>
+              <span
+                className="inline-flex items-center gap-1 rounded-xs px-1.5 py-[3px] text-[10px] font-medium"
+                style={{ background: cat.soft, color: cat.ink }}
+              >
+                <span className="h-1 w-1 rounded-full" style={{ background: cat.dot }} />
+                {cat.label}
+              </span>
             </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span
-                  className="rounded-xs border px-1.5 py-px text-[10px] font-medium"
-                  style={{
-                    borderColor: level.chipBorder,
-                    background: level.chipBg,
-                    color: level.chipText,
-                  }}
-                >
-                  {level.label}
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={share}
+                className="-mr-0.5 inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-sm px-2 text-[10.5px] font-medium text-[var(--ink-4)] transition-colors hover:bg-[var(--sunken)] hover:text-[var(--ink)]"
+              >
+                <span className="font-mono text-[11px] leading-none">&#10697;</span>
+                {copiedFor === model.id ? '已复制链接' : '分享'}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="关闭"
+                className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-sm text-[var(--ink-4)] transition-colors hover:bg-[var(--sunken)] hover:text-[var(--ink)]"
+              >
+                <Close size={12} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 主体：左身份（深色块）/ 右规格。中间一根 hairline 分栏。 */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="sm:grid sm:grid-cols-[minmax(0,0.86fr)_minmax(0,1fr)]">
+            {/* ── 左：身份 + 日期 ── */}
+            <div className="flex flex-col gap-4 border-b border-[var(--line)] px-4 py-4 sm:justify-between sm:border-r sm:border-b-0 sm:px-6 sm:py-5">
+              <div className="flex items-start gap-3.5">
+                <span className="inline-flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-md border border-[var(--line)] bg-[var(--card)] p-2">
+                  <Icon
+                    name={model.icon ?? company?.icon ?? 'openai'}
+                    size={30}
+                    color={company?.color}
+                    preferColor
+                  />
                 </span>
-                <span className={`text-[10.5px] ${category?.className ?? 'text-[var(--fg-3)]'}`}>
-                  {category?.label}
+                <div className="min-w-0 pt-0.5">
+                  <h3
+                    id="model-detail-title"
+                    className="text-[21px] leading-[1.15] font-semibold tracking-[-0.025em] text-[var(--ink)]"
+                  >
+                    {model.name}
+                  </h3>
+                  {company && (
+                    <a
+                      href={company.website}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-[var(--ink-3)] transition-colors hover:text-[var(--accent)]"
+                    >
+                      <Icon name={company.icon} size={12} color={company.color} preferColor />
+                      {companyLabel(company)}
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* 日期：整卡唯一一处完整日期，压在左栏底部，把上方留白变成呼吸而不是空洞 */}
+              <div className="flex items-end justify-between gap-3 border-t border-[var(--line)] pt-3.5">
+                <div className="flex items-end gap-1.5">
+                  <span className="tnum font-mono text-[40px] leading-[0.78] font-semibold tracking-[-0.045em] text-[var(--ink)]">
+                    {day}
+                  </span>
+                  <span className="flex flex-col gap-[3px]">
+                    <span className="tnum font-mono text-[12px] leading-none font-medium text-[var(--ink-2)]">
+                      {Number(month)} 月
+                    </span>
+                    <span className="tnum font-mono text-[10px] leading-none text-[var(--ink-4)]">{year}</span>
+                  </span>
+                </div>
+                <span className="pb-0.5 text-right">
+                  <span className="block text-[11px] leading-tight text-[var(--ink-3)]">
+                    {relativeTime(model.releaseDate, referenceDate)}
+                  </span>
+                  <span className="tnum mt-0.5 block font-mono text-[9.5px] leading-tight text-[var(--ink-4)]">
+                    {days} 天前
+                  </span>
                 </span>
               </div>
-              <h3
-                id="model-detail-title"
-                className="mt-1 truncate text-[17px] font-semibold tracking-tight text-white"
-              >
-                {model.name}
-              </h3>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="关闭"
-              className="-mr-1 -mt-1 inline-flex h-7 w-7 flex-none cursor-pointer items-center justify-center rounded-xs text-[var(--fg-3)] transition-colors hover:bg-[var(--surface-3)] hover:text-white"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                <path
-                  d="M1 1l10 10M11 1L1 11"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="square"
-                />
-              </svg>
-            </button>
+
+            {/* ── 右：规格 ── */}
+            <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+              <div>
+                <FieldLabel>输入</FieldLabel>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {model.inputs.map((m) => (
+                    <ModalityChip key={m} id={m} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-[var(--line)] pt-3.5">
+                <FieldLabel>价格</FieldLabel>
+                <div className="mt-2">
+                  <PriceBlock model={model} />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-end justify-between gap-2 border-t border-[var(--line)] pt-3.5">
+                <span>
+                  <FieldLabel>编号</FieldLabel>
+                  <code className="mt-1.5 block font-mono text-[11px] text-[var(--ink-3)]">{model.id}</code>
+                </span>
+                <span className="font-mono text-[9px] leading-[1.6] text-[var(--ink-4)]">
+                  models.dev · 官方公告
+                  <br />
+                  倍率以 GPT-5.2 混合成本为 1× 估算
+                </span>
+              </div>
+            </div>
           </div>
 
-          <dl className="mt-3 divide-y divide-[var(--line)] border-y border-[var(--line)]">
-            <Row label="公司">
-              {company ? (
-                <a
-                  href={company.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 transition-colors hover:text-[var(--accent)]"
-                >
-                  <Icon name={company.icon} size={13} color={company.color} preferColor />
-                  {companyLabel(company)}
-                  {company.nameZh !== company.name && (
-                    <span className="text-[var(--fg-3)]">{company.name}</span>
-                  )}
-                </a>
-              ) : (
-                '—'
-              )}
-            </Row>
-            <Row label="发布时间">
-              <span className="tabular-nums">{formatFullDate(model.releaseDate)}</span>
-              <span className="ml-1.5 text-[11px] text-[var(--fg-4)]">
-                {relativeTime(model.releaseDate, referenceDate)}
-                {days > 0 && <span className="ml-1 opacity-60">（{days} 天）</span>}
-              </span>
-            </Row>
-            {(prev || next) && (
-              <Row label="同厂前后">
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]">
-                  {prev && (
-                    <span className="text-[var(--fg-3)]">
-                      ← {prev.name}
-                      <span className="ml-1 font-mono text-[10px] text-[var(--fg-4)]">
-                        {prev.releaseDate.slice(5).replace('-', '/')}
-                      </span>
-                    </span>
-                  )}
-                  {next && (
-                    <span className="text-[var(--fg-3)]">
-                      {next.name} →
-                      <span className="ml-1 font-mono text-[10px] text-[var(--fg-4)]">
-                        {next.releaseDate.slice(5).replace('-', '/')}
-                      </span>
-                    </span>
-                  )}
-                </span>
-              </Row>
-            )}
-            <Row label="输入类型">
-              <span className="flex flex-wrap gap-1">
-                {model.inputs.map((m) => (
-                  <ModalityChip key={m} id={m} />
-                ))}
-              </span>
-            </Row>
-            <Row label="价格">
-              <PriceCell model={model} />
-            </Row>
-            <Row label="模型 ID">
-              <code className="rounded-xs bg-[var(--surface-3)] px-1.5 py-0.5 font-mono text-[11.5px] text-[var(--fg-2)]">
-                {model.id}
-              </code>
-            </Row>
-          </dl>
-
           {model.note && (
-            <p className="mt-3 border-l-2 border-[var(--line-2)] pl-2.5 text-[11.5px] leading-relaxed text-[var(--fg-2)]">
+            <p className="border-t border-[var(--line)] bg-[var(--sunken)] px-4 py-3 text-[12px] leading-[1.65] text-[var(--ink-2)] sm:px-6">
               {model.note}
             </p>
           )}
+        </div>
 
-          <p className="mt-4 font-mono text-[10px] leading-relaxed text-[var(--fg-4)]">
-            数据来源 models.dev · 官方发布公告
-            <br />
-            价格为 USD / 百万 token，倍率以 GPT-5.2 混合成本（输入×3 + 输出）为 1× 估算
-          </p>
-
-          <div className="mt-3 flex items-center gap-2 border-t border-[var(--line)] pt-3">
-            <button
-              type="button"
-              onClick={share}
-              className="cursor-pointer rounded-xs border border-[var(--line-2)] px-2 py-1 text-[11px] text-[var(--fg-2)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            >
-              {shareState === '已复制' ? '已复制 ✓' : '复制此模型链接'}
-            </button>
-            <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-[var(--fg-4)]">
-              {shareState && shareState !== '已复制' ? shareState : `#model=${model.id}`}
-            </span>
-            <button
-              type="button"
-              onClick={onClose}
-              className="cursor-pointer rounded-xs bg-[var(--surface-3)] px-2.5 py-1 text-[11px] text-[var(--fg)] transition-colors hover:bg-[var(--line-2)] hover:text-white"
-            >
-              关闭
-              <span className="ml-1 hidden font-mono text-[10px] text-[var(--fg-4)] sm:inline">Esc</span>
-            </button>
-          </div>
+        {/* 页脚：只放代际导航，它是看完一个模型后最自然的去向 */}
+        <div className="flex flex-none items-stretch border-t border-[var(--line)] bg-[var(--sunken)] pb-[env(safe-area-inset-bottom)]">
+          {prev && onSelect && <NavHalf model={prev} dir="prev" onSelect={onSelect} />}
+          {prev && next && <span className="w-px flex-none bg-[var(--line)]" aria-hidden="true" />}
+          {next && onSelect && <NavHalf model={next} dir="next" onSelect={onSelect} />}
         </div>
       </div>
     </div>

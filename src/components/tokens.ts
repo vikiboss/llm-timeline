@@ -1,56 +1,76 @@
 import type { LevelId } from '../types'
 
-/** 重要程度分级视觉：扁平色块，无渐变无阴影 */
+/**
+ * 重要程度视觉：不再用彩虹分类色，而是用「油墨浓度」表达稀缺度。
+ * 旗舰 = 实心墨块（最重），衍生 = 纸色虚线（最轻）。
+ * 这样在任何平面上，读者只需理解“越黑越重要”一条规则。
+ */
 export const LEVEL_STYLES: Record<
   LevelId,
   {
     label: string
     /** 纯色信号（圆点、色条） */
     signal: string
-    /** 标签底色（低透明度） */
+    /** 标签底色 */
     chipBg: string
     chipText: string
     chipBorder: string
+    /** 列表卡左侧标记：solid 实心块 / half 半墨块 / line 细线 / dot 虚点 */
+    mark: 'solid' | 'half' | 'line' | 'dot'
   }
 > = {
   flagship: {
     label: '旗舰',
     signal: 'var(--lv-flagship)',
-    chipBg: 'color-mix(in oklab, var(--lv-flagship) 14%, transparent)',
-    chipText: 'var(--lv-flagship)',
-    chipBorder: 'color-mix(in oklab, var(--lv-flagship) 32%, transparent)',
+    chipBg: 'var(--ink)',
+    chipText: '#ffffff',
+    chipBorder: 'var(--ink)',
+    mark: 'solid',
   },
   major: {
     label: '重要',
     signal: 'var(--lv-major)',
-    chipBg: 'color-mix(in oklab, var(--lv-major) 12%, transparent)',
-    chipText: 'var(--lv-major)',
-    chipBorder: 'color-mix(in oklab, var(--lv-major) 30%, transparent)',
+    chipBg: 'var(--sunken)',
+    chipText: 'var(--ink-2)',
+    chipBorder: 'var(--line-2)',
+    mark: 'half',
   },
   minor: {
     label: '常规',
     signal: 'var(--lv-minor)',
-    chipBg: 'var(--surface-3)',
-    chipText: 'var(--fg-2)',
-    chipBorder: 'var(--line-2)',
+    chipBg: 'transparent',
+    chipText: 'var(--ink-3)',
+    chipBorder: 'var(--line)',
+    mark: 'line',
   },
   spinoff: {
     label: '衍生',
     signal: 'var(--lv-spinoff)',
     chipBg: 'transparent',
-    chipText: 'var(--fg-3)',
+    chipText: 'var(--ink-4)',
     chipBorder: 'var(--line)',
+    mark: 'dot',
   },
 }
 
-/** 模型分类视觉：dot 用于筛选列表的信号点，className 用于文字着色 */
-export const CATEGORY_META: Record<string, { label: string; className: string; dot: string }> = {
-  chat: { label: '对话', className: 'text-[var(--fg-3)]', dot: '#9aa3b2' },
-  code: { label: '代码', className: 'text-teal-300', dot: '#5eead4' },
-  image: { label: '图像', className: 'text-emerald-300', dot: '#6ee7b7' },
-  video: { label: '视频', className: 'text-orange-300', dot: '#fdba74' },
-  audio: { label: '音频', className: 'text-fuchsia-300', dot: '#f0abfc' },
-  world: { label: '世界模型', className: 'text-violet-300', dot: '#c4b5fd' },
-  speech: { label: '语音', className: 'text-rose-300', dot: '#fda4af' },
-  embedding: { label: '向量', className: 'text-sky-300', dot: '#7dd3fc' },
+/**
+ * 模型分类：8 个语义色相，统一压到中低饱和，落在暖白纸面上不刺眼。
+ * `ink` 是文字色（≥4.5:1），`dot` 是信号点，`soft` 是选中底色。
+ */
+export const CATEGORY_META: Record<
+  string,
+  { label: string; ink: string; dot: string; soft: string }
+> = {
+  chat: { label: '对话', ink: '#3f444c', dot: '#6b7078', soft: '#f1f0eb' },
+  code: { label: '代码', ink: '#1f7a83', dot: '#2a8f99', soft: '#e6f2f2' },
+  image: { label: '图像', ink: '#2f7a3e', dot: '#3b9150', soft: '#e8f1e6' },
+  video: { label: '视频', ink: '#9a5a12', dot: '#b8801f', soft: '#f8efe0' },
+  audio: { label: '音频', ink: '#7d3a7a', dot: '#9a4b96', soft: '#f6ebf4' },
+  world: { label: '世界模型', ink: '#4a4a9c', dot: '#5f5fb5', soft: '#eeedf8' },
+  speech: { label: '语音', ink: '#a0453f', dot: '#bd5a52', soft: '#faebea' },
+  embedding: { label: '向量', ink: '#3d6b93', dot: '#4f84b0', soft: '#eaf1f7' },
+}
+
+export function categoryOf(id: string) {
+  return CATEGORY_META[id] ?? CATEGORY_META.chat
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Icon } from './Icon'
 import { LEVEL_STYLES } from './tokens'
 import { buildRaceLanes } from '../lib/race'
+import { Panel, PanelHead } from './ui'
 import { parseDate } from '../lib/timeline'
 import { companyLabel, companyShortLabel } from '../lib/data'
 import type { Company, Model } from '../types'
@@ -114,55 +115,58 @@ export function GenerationRace({ models, companyOf, rankOf, onSelect, referenceD
   }
 
   return (
-    <div>
-      <div className="mb-2 flex items-baseline gap-2">
-        <span className="text-[10.5px] font-semibold tracking-[0.16em] text-[var(--fg-4)] uppercase">
-          代际竞速
-        </span>
-        <span className="font-mono text-[10px] text-[var(--fg-4)]">
-          {expanded ? `全部 ${lanes.length}` : `Top ${lanes.length}`} 家厂商 · 按综合实力排序
-        </span>
-        <span className="ml-auto hidden font-mono text-[10px] text-[var(--fg-4)] sm:inline">
-          {hover ? `${hover.name} · ${hover.releaseDate}` : '每根短针 = 一次发布 · 越高 = 当天款数越多'}
-        </span>
-      </div>
-
+    <Panel label="代际竞速">
+      <PanelHead
+        title="代际竞速"
+        en="Generation Race"
+        count={`${expanded ? `全部 ${lanes.length}` : `Top ${lanes.length}`} 家 · 按实力排序`}
+        right="每根短针 = 一次发布 · 悬停查看"
+      />
       <div
-        className="relative overflow-hidden rounded-sm border border-[var(--line)] bg-[var(--surface)]"
+        className="relative"
         style={{
           ...(minBoxH ? { minHeight: minBoxH } : undefined),
-          // 两侧列宽随视口收缩：小屏优先保证轨迹区（横向时间轴）可读
-          ['--lane-label' as string]: wide ? '124px' : '104px',
-          ['--lane-meta' as string]: wide ? '136px' : '56px',
+          ['--lane-label' as string]: wide ? '132px' : '104px',
+          ['--lane-meta' as string]: wide ? '128px' : '58px',
         }}
       >
         <ul className="relative">
           {lanes.map((lane, i) => {
             const company = companyOf(lane.company)
+            // 本泳道被悬停的那根针 → 读数钉在它上方；其他泳道不显示
+            const hoverOfLane =
+              hover && hover.company === lane.company
+                ? (() => {
+                    const tower = towersOf
+                      .get(lane.company)
+                      ?.find((t) => t.models.some((m) => m.id === hover.id))
+                    return tower ? { pct: tower.pct, model: hover } : null
+                  })()
+                : null
             return (
               <li
                 key={lane.company}
-                className={`flex items-center gap-3 px-3 py-[7px] ${
+                className={`group flex items-center gap-3 px-3 py-[7px] transition-colors hover:bg-[var(--sunken)] ${
                   i > 0 ? 'border-t border-[var(--line)]' : ''
                 }`}
               >
-                <span className="relative z-10 flex w-[var(--lane-label)] flex-none items-center gap-1.5 bg-[var(--surface)] pr-2">
+                <span className="relative z-10 flex w-[var(--lane-label)] flex-none items-center gap-1.5 pr-2">
                   <Icon name={company?.icon ?? 'openai'} size={13} color={company?.color} preferColor />
                   <span
-                    className="min-w-0 truncate text-[11.5px] text-[var(--fg-2)]"
+                    className="min-w-0 truncate text-[11.5px] font-medium text-[var(--ink-2)] group-hover:text-[var(--ink)]"
                     title={companyLabel(company, lane.company)}
                   >
                     {companyShortLabel(company, lane.company)}
                   </span>
                 </span>
 
-                <span className="relative h-5 min-w-0 flex-1 overflow-hidden">
+                <span className="relative h-5 min-w-0 flex-1">
                   {/* 年份竖线：只画在轨迹区内，不侵入左右文字列 */}
                   <span aria-hidden="true" className="pointer-events-none absolute inset-0">
                     {years.map((y) => (
                       <span
                         key={y.label}
-                        className="absolute inset-y-0 w-px bg-[var(--line)]"
+                        className="absolute inset-y-0 w-px bg-[var(--line-2)]/50"
                         style={{ left: `${y.pct}%` }}
                       />
                     ))}
@@ -177,13 +181,40 @@ export function GenerationRace({ models, companyOf, rankOf, onSelect, referenceD
                       }%`,
                     }}
                   />
+                  {/* 悬停读数：钉在针上方，随行移动；clamp 在轨迹区内避免溢出 */}
+                  {hoverOfLane && (
+                    <span
+                      className="pointer-events-none absolute top-4 z-20 -translate-x-1/2 rounded-sm border border-[var(--ink)] bg-[var(--card)] px-1.5 py-0.5"
+                      style={{ left: `${Math.min(88, Math.max(12, hoverOfLane.pct))}%` }}
+                    >
+                      <span className="flex items-center gap-1.5 whitespace-nowrap">
+                        <span
+                          className="h-1.5 w-1.5 flex-none rounded-full"
+                          style={{
+                            background:
+                              hoverOfLane.model.level === 'flagship'
+                                ? LEVEL_STYLES.flagship.signal
+                                : LEVEL_STYLES.major.signal,
+                          }}
+                        />
+                        <span className="text-[11px] font-medium text-[var(--ink)]">
+                          {hoverOfLane.model.name}
+                        </span>
+                        <span className="tnum font-mono text-[9.5px] text-[var(--ink-4)]">
+                          {hoverOfLane.model.releaseDate.slice(0, 7).replace('-', '.')}
+                        </span>
+                      </span>
+                    </span>
+                  )}
                   {towersOf.get(lane.company)?.map((t) => {
                     const isF = t.models.some((m) => m.level === 'flagship')
-                    const isHover =
-                      hover !== null && t.models.some((m) => m.id === hover.id)
+                    const isHover = hover !== null && t.models.some((m) => m.id === hover.id)
+                    // 悬停时把整条泳道的其他针压暗，突出当前这一根
+                    const laneDim = hover !== null && !t.models.some((m) => m.id === hover.id)
                     // 刻度高度表示“当天几款”：1 款 = 8px细针，多款向上长高，最 18px
                     const h = t.models.length === 1 ? 8 : Math.min(18, 8 + t.models.length * 3)
                     const names = t.models.map((m) => m.name).join(' / ')
+                    // 命中区比视觉针宽得多：8px 的透明热区，鼠标不用瞄准
                     return (
                       <button
                         key={t.date}
@@ -198,23 +229,20 @@ export function GenerationRace({ models, companyOf, rankOf, onSelect, referenceD
                             ? `${t.date} · ${names}（同日 ${t.models.length} 款）`
                             : `${names} · ${t.date}`
                         }
-                        title={
-                          t.models.length > 1 ? `${t.date} · ${names}` : `${names} · ${t.date}`
-                        }
-                        // 刻度用 1.5 宽竖条：细到不会互相叠成一片，又比圆点更好瞄准
-                        className="absolute bottom-1/2 -translate-x-1/2 cursor-pointer rounded-[1px] transition-transform hover:z-10 hover:scale-x-150"
-                        style={{
-                          left: `${t.pct}%`,
-                          width: t.models.length > 1 ? 3 : 2,
-                          height: h,
-                          background: isF
-                            ? LEVEL_STYLES.flagship.signal
-                            : LEVEL_STYLES.major.signal,
-                          opacity: isHover ? 1 : t.models.length > 1 ? 1 : 0.85,
-                          outline: isHover ? '1px solid var(--fg)' : 'none',
-                          outlineOffset: 2,
-                        }}
-                      />
+                        className="group/needle absolute bottom-1/2 flex -translate-x-1/2 cursor-pointer items-end justify-center"
+                        style={{ left: `${t.pct}%`, width: 10, height: 20 }}
+                      >
+                        {/* 视针：只改颜色与高度，不做缩放/描边，避免抖动 */}
+                        <span
+                          className="block rounded-[2px] transition-[width,opacity] duration-100"
+                          style={{
+                            width: isHover ? 4 : t.models.length > 1 ? 3 : 2,
+                            height: h,
+                            background: isHover ? 'var(--accent)' : isF ? LEVEL_STYLES.flagship.signal : LEVEL_STYLES.major.signal,
+                            opacity: laneDim ? 0.28 : 1,
+                          }}
+                        />
+                      </button>
                     )
                   })}
                 </span>
@@ -222,12 +250,12 @@ export function GenerationRace({ models, companyOf, rankOf, onSelect, referenceD
                 {/* 右侧不再只给一个“X 天/代”：把“几代”和“多快”用文字并列，
                     避免用户看一排散点还要自己数 */}
                 <span
-                  className="relative z-10 flex w-[var(--lane-meta)] flex-none items-baseline justify-end gap-2 bg-[var(--surface)] pl-2 whitespace-nowrap"
+                  className="relative z-10 flex w-[var(--lane-meta)] flex-none items-baseline justify-end gap-2 pl-2 whitespace-nowrap"
                   title={`${lane.family} · 最新 ${lane.latest}（${lane.models.length} 代）`}
                 >
-                  {wide && <span className="text-[10.5px] text-[var(--fg-3)]">{lane.family}</span>}
-                  <span className="font-mono text-[9.5px] whitespace-nowrap text-[var(--fg-4)]">
-                    <span className="text-[var(--fg-2)]">{lane.models.length}</span> 代 ·{' '}
+                  {wide && <span className="text-[10.5px] text-[var(--ink-3)]">{lane.family}</span>}
+                  <span className="tnum font-mono text-[9.5px] whitespace-nowrap text-[var(--ink-4)]">
+                    <span className="font-semibold text-[var(--ink-2)]">{lane.models.length}</span> 代 ·{' '}
                     {lane.cadenceDays === null ? '—' : `${lane.cadenceDays}天`}
                   </span>
                 </span>
@@ -256,7 +284,7 @@ export function GenerationRace({ models, companyOf, rankOf, onSelect, referenceD
             type="button"
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
-            className="group flex w-full cursor-pointer items-center justify-center gap-1.5 border-t border-[var(--line)] bg-[var(--surface-2)] px-3 py-[6px] text-[11px] text-[var(--fg-3)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--fg)]"
+            className="group flex w-full cursor-pointer items-center justify-center gap-1.5 border-t border-[var(--line)] bg-[var(--sunken)] px-3 py-[7px] text-[11px] font-medium text-[var(--ink-2)] transition-colors hover:bg-[var(--sunken-2)] hover:text-[var(--ink)]"
           >
             <svg
               width="9"
@@ -278,12 +306,12 @@ export function GenerationRace({ models, companyOf, rankOf, onSelect, referenceD
         )}
 
         {/* 年份标签：与轨迹区左右两侧各对齐（左侧列宽 124/152 + gap 12，右侧 136 + gap 12） */}
-        <div className="relative h-5 border-t border-[var(--line)] bg-[var(--surface-2)] pl-[calc(var(--lane-label)+1.5rem)] pr-[calc(var(--lane-meta)+1.5rem)]">
+        <div className="relative h-5 border-t border-[var(--line)] bg-[var(--sunken)] pl-[calc(var(--lane-label)+1.5rem)] pr-[calc(var(--lane-meta)+1.5rem)]">
           <div className="relative h-full">
             {years.map((y) => (
               <span
                 key={y.label}
-                className="absolute top-0.5 -translate-x-1/2 font-mono text-[9.5px] text-[var(--fg-4)]"
+                className="tnum absolute top-0.5 -translate-x-1/2 font-mono text-[9.5px] text-[var(--ink-4)]"
                 style={{ left: `${Math.min(97, Math.max(3, y.pct))}%` }}
               >
                 {y.label}
@@ -292,6 +320,6 @@ export function GenerationRace({ models, companyOf, rankOf, onSelect, referenceD
           </div>
         </div>
       </div>
-    </div>
+    </Panel>
   )
 }

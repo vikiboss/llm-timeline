@@ -3,11 +3,12 @@ import { FilterPanel } from './components/FilterPanel'
 import { InsightsBar } from './components/InsightsBar'
 import { ModelDetail } from './components/ModelDetail'
 import { Timeline } from './components/Timeline'
-import { ReleaseDensity } from './components/ReleaseDensity'
+import { ReleaseHeatmap } from './components/ReleaseHeatmap'
 import { GenerationRace } from './components/GenerationRace'
 import { YearNav } from './components/YearNav'
 import { Icon } from './components/Icon'
 import { LEVEL_STYLES } from './components/tokens'
+import { Button, Close, SearchIcon } from './components/ui'
 import {
   allModels,
   companies,
@@ -34,39 +35,58 @@ function toggle<T>(set: Set<T>, value: T): Set<T> {
 
 const initial = parseHash(window.location.hash)
 
-/** 移动端水平分段按钮：快捷套用一组等级筛选 */
-function LevelQuickChip({
+/** 品牌记号：一条持续抬升的阶梯（时间向右，能力向上），每一级台阶 = 一次发布 */
+function Logomark({ size = 26 }: { size?: number }) {
+  return (
+    <span
+      className="grid flex-none place-items-center rounded-sm bg-[var(--ink)]"
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+    >
+      <svg width={size * 0.58} height={size * 0.58} viewBox="4 4 56 56" shapeRendering="crispEdges">
+        <path
+          d="M10 44h14v-12h14V20h12"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="12"
+          strokeLinejoin="miter"
+        />
+      </svg>
+    </span>
+  )
+}
+
+/** 手机端快捷分段：全部 / 只看旗舰 / 旗舰 + 重要 */
+function QuickSegment({
   active,
   onClick,
   label,
   count,
-  color,
 }: {
   active: boolean
   onClick: () => void
   label: string
   count: number
-  color: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex flex-none cursor-pointer items-center gap-1.5 rounded-xs border px-2.5 py-1 text-[11.5px] transition-colors ${
-        active
-          ? 'border-[var(--accent)] bg-[color-mix(in_oklab,var(--accent)_14%,transparent)] text-white'
-          : 'border-[var(--line)] text-[var(--fg-2)]'
+      className={`flex flex-none cursor-pointer items-center gap-1.5 rounded-sm px-2.5 py-1 text-[11.5px] font-medium transition-colors ${
+        active ? 'bg-[var(--ink)] text-white' : 'text-[var(--ink-3)] hover:text-[var(--ink)]'
       }`}
     >
-      <span className="h-1.5 w-1.5 flex-none rounded-xs" style={{ background: color }} />
       {label}
-      <span className="font-mono text-[10px] text-[var(--fg-4)] tabular-nums">{count}</span>
+      <span className={`tnum font-mono text-[10px] ${active ? 'text-white/60' : 'text-[var(--ink-4)]'}`}>
+        {count}
+      </span>
     </button>
   )
 }
 
 export default function App() {
+
   const [selectedCompanies, setSelectedCompanies] = useState<Set<string>>(
     () => new Set(initial.companies),
   )
@@ -257,10 +277,10 @@ export default function App() {
         .map((g) => ({ key: g.key, diff: Math.abs(Number(g.key.replace('-', '')) - Number(key.replace('-', ''))) }))
         .sort((a, b) => a.diff - b.diff)[0]
       const fallback = nearest ? document.getElementById(`month-${nearest.key}`) : null
-      fallback?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      fallback?.scrollIntoView({ behavior: 'auto', block: 'start' })
       return
     }
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    el.scrollIntoView({ behavior: 'auto', block: 'start' })
     // 高亮目标月份，帮助定位
     el.animate(
       [
@@ -299,49 +319,43 @@ export default function App() {
   )
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--fg)]">
-      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--bg)]/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-4 px-4 lg:px-6">
-          <div className="flex items-center gap-2">
-            <span className="grid h-6 w-6 place-items-center rounded-sm bg-[var(--accent)]">
-              {/* 与 favicon 同一记号的紧凑版：亮底 + 深色阶梯，padding 与 favicon 一致 */}
-              <svg
-                width="15"
-                height="15"
-                viewBox="4 4 56 56"
-                aria-hidden="true"
-                shapeRendering="crispEdges"
-              >
-                <path
-                  d="M10 44h14v-12h14V20h12"
-                  fill="none"
-                  stroke="var(--accent-ink)"
-                  strokeWidth="12"
-                  strokeLinejoin="miter"
-                />
-              </svg>
+    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)]">
+      {/* ---------------------------------------------------------------- 页头 */}
+      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--paper)]/88 backdrop-blur-md">
+        <div className="mx-auto flex h-[var(--header-h)] max-w-[1360px] items-center gap-3 px-4 lg:px-6">
+          <a href="#" className="flex items-center gap-2" aria-label="群星纪年 · 回到顶部">
+            <Logomark />
+            <span className="flex flex-col leading-none">
+              <span className="text-[14px] font-semibold tracking-[-0.02em] text-[var(--ink)]">
+                群星纪年
+              </span>
+              <span className="mt-1 hidden font-mono text-[8.5px] tracking-[0.18em] text-[var(--ink-4)] uppercase sm:block">
+                Chronicle of Stars
+              </span>
             </span>
-            <span className="text-[13px] font-semibold tracking-tight text-white">群星纪年</span>
-          </div>
+          </a>
 
-          <nav className="hidden items-center gap-1 text-[11.5px] md:flex">
-            <span className="rounded-xs px-2 py-1 text-[var(--fg-3)]">
-              {activeCompanies.length} 厂商
+          <span className="mx-1 hidden h-5 w-px bg-[var(--line-2)] sm:block" />
+
+          <nav className="hidden items-center gap-2 text-[11px] text-[var(--ink-3)] md:flex">
+            <span className="tnum">
+              <b className="font-mono font-semibold text-[var(--ink-2)]">{activeCompanies.length}</b> 厂商
             </span>
-            <span className="text-[var(--fg-4)]">/</span>
-            <span className="rounded-xs px-2 py-1 text-[var(--fg-3)]">
-              {allModels.length} 模型
+            <span className="text-[var(--line-2)]">/</span>
+            <span className="tnum">
+              <b className="font-mono font-semibold text-[var(--ink-2)]">{allModels.length}</b> 模型
             </span>
             {filteredActive && (
               <>
-                <span className="text-[var(--fg-4)]">/</span>
+                <span className="text-[var(--line-2)]">/</span>
                 <button
                   type="button"
                   onClick={reset}
-                  className="cursor-pointer rounded-xs bg-[var(--surface-2)] px-2 py-1 text-[var(--accent)] transition-colors hover:bg-[var(--surface-3)]"
+                  className="tnum flex cursor-pointer items-center gap-1 rounded-xs bg-[var(--ink)] px-1.5 py-0.5 font-mono text-[10.5px] text-white transition-colors hover:bg-[var(--ink-2)]"
                   title="清除全部筛选"
                 >
-                  {filtered.length} 条结果 ✕
+                  {filtered.length} 条
+                  <Close size={7} />
                 </button>
               </>
             )}
@@ -349,197 +363,171 @@ export default function App() {
 
           <div className="ml-auto flex items-center gap-2">
             <div className="relative hidden sm:block">
-              <svg
-                className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[var(--fg-4)]"
-                width="12"
-                height="12"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle cx="6.8" cy="6.8" r="4.4" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M10.2 10.2L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
-              </svg>
+              <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-[var(--ink-4)]">
+                <SearchIcon size={13} />
+              </span>
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') setQuery('')
                 }}
-                placeholder="搜索模型 / 公司"
-                aria-label="搜索模型或公司"
-                className="w-40 rounded-xs border border-[var(--line)] bg-[var(--surface)] py-1.5 pr-6 pl-7 text-[12px] text-[var(--fg)] placeholder:text-[var(--fg-4)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] focus:outline-none md:w-52"
+                placeholder="搜索模型 / 厂商"
+                aria-label="搜索模型或厂商"
+                className="w-44 rounded-sm border border-[var(--line-2)] bg-[var(--card)] py-1.5 pr-7 pl-8 text-[12px] text-[var(--ink)] placeholder:text-[var(--ink-4)] focus:border-[var(--ink)] focus:outline-none md:w-56"
               />
               {query && (
                 <button
                   type="button"
                   onClick={() => setQuery('')}
                   aria-label="清空搜索"
-                  className="absolute top-1/2 right-1.5 -translate-y-1/2 cursor-pointer text-[var(--fg-4)] hover:text-white"
+                  className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-[var(--ink-4)] hover:text-[var(--ink)]"
                 >
-                  <svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="square" />
-                  </svg>
+                  <Close size={9} />
                 </button>
               )}
             </div>
-            <button
-              type="button"
-              onClick={copyLink}
-              title="复制当前视图链接"
-              aria-label="复制当前视图链接"
-              className="hidden cursor-pointer items-center gap-1 rounded-xs border border-[var(--line)] px-2 py-1.5 text-[11.5px] text-[var(--fg-2)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] sm:flex"
-            >
-              {copied ? (
-                <span className="text-[var(--accent)]">已复制</span>
-              ) : (
-                <>
-                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path
-                      d="M6 10L10 6M5.5 12.5L3.5 14.5a3 3 0 01-4.2-4.2l3-3M10.5 3.5l2-2a3 3 0 014.2 4.2l-3 3"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      transform="translate(0.5 0.5) scale(0.92)"
-                    />
-                  </svg>
-                  分享
-                </>
-              )}
-            </button>
-            <button
-              type="button"
+            <Button onClick={copyLink} title="复制当前视图链接" ariaLabel="复制当前视图链接" className="hidden sm:inline-flex">
+              <ShareIcon />
+              {copied ? '已复制' : '分享'}
+            </Button>
+            <Button
               onClick={() => setPanelOpen(true)}
-              className={`flex cursor-pointer items-center gap-1.5 rounded-xs border px-2.5 py-1.5 text-[11.5px] transition-colors lg:hidden ${
-                activeFilterCount > 0
-                  ? 'border-[var(--accent)] bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] text-[var(--accent)]'
-                  : 'border-[var(--line-2)] text-[var(--fg-2)]'
-              }`}
+              active={activeFilterCount > 0}
+              className="lg:hidden"
             >
               筛选
               {activeFilterCount > 0 && (
-                <span className="grid h-4 min-w-4 place-items-center rounded-xs bg-[var(--accent)] px-1 font-mono text-[10px] font-semibold text-[var(--accent-ink)] tabular-nums">
+                <span className="tnum grid h-4 min-w-4 place-items-center rounded-xs bg-white/20 px-1 font-mono text-[10px] font-bold">
                   {activeFilterCount}
                 </span>
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1440px] px-4 lg:px-6">
-        {/* Hero：大标题直接压在网格背景上 */}
-        <section className="relative overflow-hidden border-b border-[var(--line)] pt-10 pb-6">
-          <div aria-hidden="true" className="grid-bg pointer-events-none absolute inset-0 opacity-40" />
-          <div className="relative">
-            <div className="flex items-baseline gap-3">
-              <h1 className="text-[30px] leading-none font-semibold tracking-[-0.03em] text-white sm:text-[40px]">
+      <div className="mx-auto max-w-[1360px] px-4 lg:px-6">
+        {/* ---------------------------------------------------------------- Hero */}
+        <section className="relative overflow-hidden pt-9 pb-6 sm:pt-12">
+          <div aria-hidden="true" className="dot-paper pointer-events-none absolute inset-0 opacity-60" />
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium text-[var(--ink-3)]">
+                <span className="tnum font-mono tracking-[0.04em] text-[var(--ink-4)]">
+                  {firstYear}
+                </span>
+                <span className="h-px w-6 bg-[var(--line-2)]" />
+                <span className="tnum font-mono tracking-[0.04em] text-[var(--ink-4)]">
+                  {REFERENCE_DATE.slice(0, 4)}
+                </span>
+                <span className="ml-1">大模型发布编年史</span>
+              </div>
+              <h1 className="mt-3 text-[40px] leading-[0.92] font-semibold tracking-[-0.045em] text-[var(--ink)] sm:text-[64px]">
                 群星纪年
               </h1>
-              <span className="hidden font-mono text-[11px] text-[var(--fg-4)] sm:inline">
-                CHRONICLE OF STARS
-              </span>
+              <p className="mt-4 max-w-[560px] text-[13.5px] leading-relaxed text-[var(--ink-2)]">
+                <span className="tnum font-semibold text-[var(--ink)]">{allModels.length}</span> 次模型发布，
+                横跨 <span className="tnum font-semibold text-[var(--ink)]">{activeCompanies.length}</span> 家厂商、
+                <span className="tnum font-semibold text-[var(--ink)]">{flagshipCount}</span> 次旗舰。
+              </p>
             </div>
-            <p className="mt-2 text-[13px] font-medium text-[var(--fg-3)]">
-              大模型发布全景 · 从 GPT-3.5 到 {REFERENCE_DATE.slice(0, 4)}
-            </p>
-            <p className="mt-2.5 max-w-[680px] text-[13px] leading-relaxed text-[var(--fg-2)]">
-              收录 {allModels.length} 次模型发布，横跨 {activeCompanies.length} 家厂商与{' '}
-              <span className="whitespace-nowrap" style={{ color: LEVEL_STYLES.flagship.chipText }}>
-                {flagshipCount} 次旗舰
-              </span>
-              。
-            </p>
-            <p className="mt-1 max-w-[680px] text-[12px] leading-relaxed text-[var(--fg-3)]">
-              筛选与详情会同步到网址，可直接把当前视图分享给同事。
-            </p>
 
-            <div className="mt-5 flex flex-wrap items-center gap-2">
-              <div className="flex overflow-hidden rounded-sm border border-[var(--line-2)]">
-                {(Object.keys(LEVEL_STYLES) as LevelId[]).map((id) => {
-                  const style = LEVEL_STYLES[id]
-                  const on = selectedLevels.has(id)
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setSelectedLevels((s) => toggle(s, id))}
-                      aria-pressed={on}
-                      className={`flex cursor-pointer items-center gap-1.5 border-r border-[var(--line)] px-2.5 py-1.5 text-[11.5px] transition-colors last:border-r-0 ${
-                        on
-                          ? 'bg-[var(--surface-3)] text-white'
-                          : 'bg-[var(--surface)] text-[var(--fg-2)] hover:bg-[var(--surface-2)] hover:text-white'
-                      }`}
-                    >
-                      <span className="h-1.5 w-1.5 rounded-xs" style={{ background: style.signal }} />
-                      {style.label}
-                      <span
-                        className={`font-mono text-[10px] tabular-nums ${on ? 'text-[var(--fg-3)]' : 'text-[var(--fg-4)]'}`}
-                      >
-                        {allModels.filter((m) => m.level === id).length}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
+            {/* 三枚大数字：给整页一个“报头” */}
+            <dl className="flex shrink-0 gap-px overflow-hidden rounded-lg border border-[var(--line-ink)] bg-[var(--line-ink)]">
+              {[
+                { k: '收录厂商', v: activeCompanies.length, u: '家' },
+                { k: '旗舰发布', v: flagshipCount, u: '次' },
+                { k: '数据更新', v: dataset.lastUpdated.slice(5).replace('-', '/'), u: '' },
+              ].map((x) => (
+                <div key={x.k} className="flex-1 bg-[var(--card)] px-4 py-3 lg:min-w-[104px]">
+                  <dt className="text-[9.5px] font-medium tracking-[0.08em] text-[var(--ink-4)] uppercase">
+                    {x.k}
+                  </dt>
+                  <dd className="tnum mt-1 flex items-baseline gap-1">
+                    <span className="font-mono text-[24px] leading-none font-semibold tracking-[-0.04em] text-[var(--ink)]">
+                      {x.v}
+                    </span>
+                    {x.u && <span className="text-[10.5px] text-[var(--ink-4)]">{x.u}</span>}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
 
-              <span className="ml-auto hidden items-center gap-1.5 font-mono text-[10.5px] text-[var(--fg-4)] sm:flex">
-                <span className="h-1.5 w-1.5 rounded-xs bg-[var(--accent)]" />
-                数据更新至 {dataset.lastUpdated}
-              </span>
+          {/* 分级快捷条：分段控件形态 */}
+          <div className="relative mt-6 flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-0.5 rounded-md bg-[var(--sunken)] p-0.5">
+              {(Object.keys(LEVEL_STYLES) as LevelId[]).map((id) => {
+                const style = LEVEL_STYLES[id]
+                const on = selectedLevels.has(id)
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setSelectedLevels((s) => toggle(s, id))}
+                    aria-pressed={on}
+                    className={`flex cursor-pointer items-center gap-1.5 rounded-sm px-2.5 py-1 text-[11.5px] font-medium transition-colors ${
+                      on ? 'bg-[var(--card)] text-[var(--ink)] shadow-[0_0_0_1px_var(--line)]' : 'text-[var(--ink-3)] hover:text-[var(--ink)]'
+                    }`}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: style.signal }} />
+                    {style.label}
+                    <span className="tnum font-mono text-[10px] text-[var(--ink-4)]">
+                      {allModels.filter((m) => m.level === id).length}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
+            <span className="ml-auto hidden items-center gap-1.5 text-[10.5px] text-[var(--ink-4)] sm:flex">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+              筛选与详情同步到网址，可直接分享
+            </span>
           </div>
         </section>
 
-        <div className="border-b border-[var(--line)] py-4">
+        {/* ---------------------------------------------------------------- 结论区 */}
+        <div className="flex flex-col gap-3 pb-3">
           <InsightsBar
             models={filtered}
             companyOf={companyOf}
             referenceDate={REFERENCE_DATE}
             onSelect={setActive}
           />
-        </div>
-
-        <div className="border-b border-[var(--line)] py-4">
-          <ReleaseDensity
+          <ReleaseHeatmap
             allModels={allModels}
             filtered={filtered}
-            groups={groups}
+            referenceDate={REFERENCE_DATE}
             onJump={jumpToMonth}
           />
         </div>
 
-        {/* 手机端专用：一眼切换「全部 / 旗舰 / 重要以上」，把 43 屏压到十几屏。
-            桌面端左侧面板已提供同等能力，不重复出现。 */}
-        <div className="flex items-center gap-1.5 overflow-x-auto border-b border-[var(--line)] py-2.5 lg:hidden">
-          <LevelQuickChip
+        {/* 手机快捷分段 */}
+        <div className="mb-3 flex items-center gap-0.5 rounded-md border border-[var(--line)] bg-[var(--sunken)] p-0.5 lg:hidden">
+          <QuickSegment
             active={selectedLevels.size === 0}
             onClick={() => setSelectedLevels(new Set())}
             label="全部"
             count={allModels.length}
-            color="var(--fg-3)"
           />
-          <LevelQuickChip
+          <QuickSegment
             active={selectedLevels.size === 1 && selectedLevels.has('flagship')}
             onClick={() => setSelectedLevels(new Set<LevelId>(['flagship']))}
             label="只看旗舰"
             count={allModels.filter((m) => m.level === 'flagship').length}
-            color={LEVEL_STYLES.flagship.signal}
           />
-          <LevelQuickChip
+          <QuickSegment
             active={
-              selectedLevels.size === 2 &&
-              selectedLevels.has('flagship') &&
-              selectedLevels.has('major')
+              selectedLevels.size === 2 && selectedLevels.has('flagship') && selectedLevels.has('major')
             }
             onClick={() => setSelectedLevels(new Set<LevelId>(['flagship', 'major']))}
             label="旗舰 + 重要"
             count={allModels.filter((m) => m.level === 'flagship' || m.level === 'major').length}
-            color={LEVEL_STYLES.major.signal}
           />
         </div>
 
-        <div className="border-b border-[var(--line)] py-4">
+        <div className="pb-3">
           <GenerationRace
             models={filtered}
             companyOf={companyOf}
@@ -549,11 +537,9 @@ export default function App() {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 pb-16 lg:grid-cols-[216px_minmax(0,1fr)] lg:gap-8">
+        {/* ---------------------------------------------------------------- 主体网格 */}
+        <div className="grid grid-cols-1 gap-5 pt-2 pb-16 lg:grid-cols-[208px_minmax(0,1fr)] lg:gap-6">
           <aside className="hidden lg:block">
-            {/* 吸顶纯 CSS：top = --sticky-top（页头 57 + 年份条 39），与右侧月份标签同一基准，
-                因此「297 / 297」和月份标题上下自动对齐。
-                底部再留 24px，滚动条末端不会贴着视口边。 */}
             <div className="sticky top-[var(--sticky-top)] max-h-[calc(100vh-var(--sticky-top)-24px)] overflow-y-auto overscroll-contain px-1 pb-4">
               {panel}
             </div>
@@ -563,11 +549,8 @@ export default function App() {
             <Timeline
               groups={groups}
               companyOf={companyOf}
-              referenceDate={REFERENCE_DATE}
               onSelect={setActive}
               onReset={reset}
-              totalModels={filtered.length || 1}
-              // 年份条与月份标签共用一份吸顶状态，避免两层之间出现空档
               renderNav={({ retracted, activeMonth }) => (
                 <YearNav
                   groups={groups}
@@ -581,79 +564,98 @@ export default function App() {
           </main>
         </div>
 
-        <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--line)] py-5 font-mono text-[10.5px] text-[var(--fg-4)]">
-          <span className="flex items-center gap-1.5">
-            <Icon name="openai" size={11} /> icons · lobehub (MIT)
-          </span>
-          <span className="text-[var(--line-2)]">|</span>
-          <span>data · models.dev</span>
-          <span className="text-[var(--line-2)]">|</span>
-          <span>
-            {companies.length} vendors · {allModels.length} models · since {firstYear}
-          </span>
-          <span className="ml-auto">URL 记录筛选状态，可直接分享</span>
+        {/* ---------------------------------------------------------------- 页脚 */}
+        <footer className="relative -mx-4 border-t border-[var(--line)] px-4 pt-6 pb-10 lg:-mx-6 lg:px-6">
+          <div className="flex flex-wrap items-start gap-x-8 gap-y-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <Logomark size={22} />
+                <span className="text-[13px] font-semibold tracking-[-0.01em]">群星纪年</span>
+              </div>
+              <p className="mt-2 max-w-[300px] text-[11px] leading-relaxed text-[var(--ink-3)]">
+                所有时间、价格与分级均来自公开公告与 models.dev。
+                数据更新即基准日，页面上的「相对时间」以此为准。
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-x-8 gap-y-3 font-mono text-[10.5px] text-[var(--ink-4)]">
+              <span className="flex flex-col gap-1">
+                <span className="text-[9px] tracking-[0.12em] text-[var(--ink-4)] uppercase">Data</span>
+                <span className="text-[var(--ink-2)]">{dataset.lastUpdated}</span>
+                <span>models.dev</span>
+              </span>
+              <span className="flex flex-col gap-1">
+                <span className="text-[9px] tracking-[0.12em] uppercase">Icons</span>
+                <span className="flex items-center gap-1 text-[var(--ink-2)]">
+                  <Icon name="openai" size={11} /> lobehub · MIT
+                </span>
+              </span>
+              <span className="flex flex-col gap-1">
+                <span className="text-[9px] tracking-[0.12em] uppercase">Scale</span>
+                <span className="text-[var(--ink-2)]">
+                  {companies.length} vendors
+                </span>
+                <span>{allModels.length} models · since {firstYear}</span>
+              </span>
+            </div>
+            <span className="ml-auto self-end text-[10.5px] text-[var(--ink-4)]">
+              URL 记录筛选状态 · 可直接分享
+            </span>
+          </div>
         </footer>
       </div>
 
-      {/* 移动端筛选抽屉 */}
+      {/* ---------------------------------------------------------------- 移动端筛选抽屉 */}
       {panelOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <button
             type="button"
             aria-label="关闭筛选"
             onClick={() => setPanelOpen(false)}
-            className="absolute inset-0 cursor-default bg-black/75"
+            className="absolute inset-0 cursor-default bg-[var(--ink)]/25 backdrop-blur-[2px]"
           />
           <div
             role="dialog"
             aria-modal="true"
             aria-label="筛选"
-            className="animate-fade-in absolute inset-y-0 right-0 flex w-[88%] max-w-sm flex-col border-l border-[var(--line-2)] bg-[var(--surface)]"
+            className="animate-ink-in absolute inset-y-0 right-0 flex w-[90%] max-w-sm flex-col border-l border-[var(--line-ink)] bg-[var(--card)]"
           >
-            {/* 头部吸顶：滚动公司长列表时「完成」始终可达 */}
-            <div className="flex-none border-b border-[var(--line)] bg-[var(--surface)] px-4 pt-3 pb-2.5">
+            <div className="flex-none border-b border-[var(--line)] px-4 pt-3 pb-3">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-[12.5px] font-medium text-white">筛选</span>
-                <button
-                  type="button"
-                  onClick={() => setPanelOpen(false)}
-                  className="cursor-pointer rounded-xs border border-[var(--line-2)] px-2 py-0.5 text-[11px] text-[var(--fg-2)]"
-                >
+                <span className="text-[13px] font-semibold">筛选</span>
+                <Button onClick={() => setPanelOpen(false)} size="xs">
                   完成
-                </button>
+                </Button>
               </div>
               <div className="relative sm:hidden">
+                <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-[var(--ink-4)]">
+                  <SearchIcon size={13} />
+                </span>
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="搜索模型 / 公司"
-                  aria-label="搜索模型或公司"
-                  className="w-full rounded-xs border border-[var(--line)] bg-[var(--surface-2)] px-2.5 py-1.5 pr-8 text-[12.5px] text-[var(--fg)] placeholder:text-[var(--fg-4)] focus:border-[var(--accent)] focus:outline-none"
+                  placeholder="搜索模型 / 厂商"
+                  aria-label="搜索模型或厂商"
+                  className="w-full rounded-sm border border-[var(--line-2)] bg-[var(--card)] py-1.5 pr-8 pl-8 text-[12.5px] text-[var(--ink)] placeholder:text-[var(--ink-4)] focus:border-[var(--ink)] focus:outline-none"
                 />
                 {query && (
                   <button
                     type="button"
                     onClick={() => setQuery('')}
                     aria-label="清空搜索"
-                    className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-[var(--fg-4)]"
+                    className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-[var(--ink-4)]"
                   >
-                    ✕
+                    <Close size={9} />
                   </button>
                 )}
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">{panel}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4">{panel}</div>
 
-            {/* 底部固定：实时结果数 + 一键应用，省去「关掉抽屉再数一下」 */}
-            <div className="flex-none border-t border-[var(--line)] bg-[var(--surface-2)] px-4 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
-              <button
-                type="button"
-                onClick={() => setPanelOpen(false)}
-                className="w-full cursor-pointer rounded-sm bg-[var(--accent)] py-2 text-[12.5px] font-semibold text-[var(--accent-ink)] active:opacity-80"
-              >
+            <div className="flex-none border-t border-[var(--line)] bg-[var(--sunken)] px-4 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+              <Button onClick={() => setPanelOpen(false)} tone="ink" size="md" className="w-full">
                 查看 {filtered.length} 条结果
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -664,7 +666,21 @@ export default function App() {
         company={active ? companyOf(active.company) : undefined}
         referenceDate={REFERENCE_DATE}
         onClose={() => setActive(null)}
+        onSelect={setActive}
       />
     </div>
+  )
+}
+
+function ShareIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M6.5 9.5l3-3M7 12.2l-1.6 1.6a2.8 2.8 0 01-4-4l2.4-2.4M9 3.8l1.6-1.6a2.8 2.8 0 014 4l-2.4 2.4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }

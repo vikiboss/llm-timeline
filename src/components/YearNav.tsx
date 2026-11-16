@@ -5,25 +5,20 @@ interface YearNavProps {
   groups: MonthGroup[]
   allModels: Model[]
   onJump: (monthKey: string) => void
-  /** 向下滚动时收起年份条（桌面不收起） */
   retracted: boolean
-  /** 当前视口所在月份，手机端与年份合并显示在同一行 */
   activeMonth?: MonthGroup
 }
 
 /**
- * 年份刻度条：把「滚到某一年」变成一次点击。
- * 同时充当阅读进度条——当前视口所在年份高亮。
+ * 年份刻度：把「滚到某一年」变成一次点击，同时兼任阅读进度。
+ * 选中态是一枚实心墨块——与页面其他选中态保持同一语言。
  */
 export function YearNav({ groups, allModels, onJump, retracted, activeMonth }: YearNavProps) {
   const years = [...new Set(allModels.map((m) => Number(m.releaseDate.slice(0, 4))))].sort()
   const visibleYears = new Set(groups.map((g) => g.year))
-  const [activeYear, setActiveYear] = useState<number | null>(
-    groups.length ? groups[0].year : null,
-  )
+  const [activeYear, setActiveYear] = useState<number | null>(groups.length ? groups[0].year : null)
   const navRef = useRef<HTMLDivElement>(null)
 
-  // 用 IntersectionObserver 跟随滚动：进入视口上 1/3 的月份决定当前年份
   useEffect(() => {
     if (groups.length === 0) return
     const nodes = groups
@@ -44,72 +39,71 @@ export function YearNav({ groups, allModels, onJump, retracted, activeMonth }: Y
     return () => io.disconnect()
   }, [groups])
 
-  // 当前年份按钮滚动到可视区
   useEffect(() => {
     const el = navRef.current?.querySelector<HTMLElement>('[data-active="true"]')
     el?.scrollIntoView({ block: 'nearest', inline: 'center' })
   }, [activeYear])
 
-  // 年份条高度固定在 --year-nav-h（见 index.css），下面所有吸顶层只管 top: --sticky-top。
-  // 这里不再做任何尺寸测量：不读布局、不写根变量，滚动路径上零开销。
-
   if (years.length === 0) return null
 
   return (
-    // 年份条常驻在页头下，层级高于月份标签（月份标签的吸顶偏移由父级统一给出）
-    // 高度固定（box-border，含 1px 下边框），收起时只隐内容不改高，避免吸顶偏移跟着变
     <div
-      className={`sticky z-30 box-border -mx-4 border-b border-[var(--line)] bg-[var(--bg)]/95 px-4 backdrop-blur-sm transition-opacity duration-150 lg:-mx-6 lg:px-6 ${
+      className={`sticky z-30 box-border -mx-4 border-b border-[var(--line)] bg-[var(--paper)]/92 px-4 backdrop-blur-md transition-opacity duration-150 lg:-mx-6 lg:px-6 ${
         retracted ? 'pointer-events-none opacity-0' : 'opacity-100'
       }`}
-      style={{ top: 'var(--header-h)', height: 'var(--year-nav-h)' }}
+      style={{ top: 'var(--header-h)', height: 'var(--nav-h)' }}
     >
-      <div ref={navRef} className="flex h-full items-center gap-1 overflow-x-auto">
-        <span className="mr-1 hidden text-[10px] font-semibold tracking-[0.14em] text-[var(--fg-4)] uppercase sm:inline">
-          跳到
+      <div ref={navRef} className="no-scrollbar flex h-full items-center gap-1 overflow-x-auto">
+        <span className="mr-2 hidden text-[10px] font-medium tracking-[0.08em] text-[var(--ink-4)] sm:inline">
+          跳至
         </span>
-        {years.map((y) => {
-          const has = visibleYears.has(y)
-          const active = activeYear === y
-          const count = groups.filter((g) => g.year === y).reduce((n, g) => n + g.events.length, 0)
-          return (
-            <button
-              key={y}
-              type="button"
-              data-active={active}
-              disabled={!has}
-              onClick={() => {
-                const first = groups.find((g) => g.year === y)
-                if (first) onJump(first.key)
-              }}
-              aria-current={active ? 'true' : undefined}
-              className={`cursor-pointer rounded-xs px-2 py-1 font-mono text-[11.5px] tabular-nums transition-colors ${
-                !has
-                  ? 'cursor-default text-[var(--fg-4)]/35'
-                  : active
-                    ? 'bg-[var(--accent)] font-semibold text-[var(--accent-ink)]'
-                    : 'text-[var(--fg-3)] hover:bg-[var(--surface-2)] hover:text-white'
-              }`}
-              title={has ? `${y} 年 · ${count} 次发布` : `${y} 年（当前筛选无发布）`}
-            >
-              {y}
-            </button>
-          )
-        })}
-        {/* 手机：年份与当前月份合并成一条，省掉一层吸顶 */}
+
+        {/* 年份：连成一枚分段控件 */}
+        <div className="flex items-center gap-1 rounded-md bg-[var(--sunken)] p-0.5">
+          {years.map((y) => {
+            const has = visibleYears.has(y)
+            const active = activeYear === y
+            const count = groups.filter((g) => g.year === y).reduce((n, g) => n + g.events.length, 0)
+            return (
+              <button
+                key={y}
+                type="button"
+                data-active={active}
+                disabled={!has}
+                onClick={() => {
+                  const first = groups.find((g) => g.year === y)
+                  if (first) onJump(first.key)
+                }}
+                aria-current={active ? 'true' : undefined}
+                className={`tnum cursor-pointer rounded-sm px-2.5 py-1 font-mono text-[11.5px] transition-colors ${
+                  !has
+                    ? 'cursor-default text-[var(--ink-4)]/40'
+                    : active
+                      ? 'bg-[var(--ink)] font-semibold text-white'
+                      : 'text-[var(--ink-3)] hover:bg-[var(--card)] hover:text-[var(--ink)]'
+                }`}
+                title={has ? `${y} 年 · ${count} 次发布` : `${y} 年（当前筛选无发布）`}
+              >
+                {y}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* 手机：当前月份合并进这一行 */}
         {activeMonth && (
           <button
             type="button"
             onClick={() => onJump(activeMonth.key)}
-            className="ml-auto flex flex-none cursor-pointer items-center gap-1.5 rounded-xs bg-[var(--surface-2)] px-2 py-0.5 text-[11.5px] text-white lg:hidden"
+            className="ml-auto flex flex-none cursor-pointer items-center gap-1.5 rounded-sm border border-[var(--line)] bg-[var(--card)] px-2 py-1 text-[11px] text-[var(--ink)] lg:hidden"
           >
-            <span className="font-mono tabular-nums">{activeMonth.month} 月</span>
-            <span className="font-mono text-[10px] text-[var(--fg-4)] tabular-nums">
+            <span className="tnum font-mono">{activeMonth.month} 月</span>
+            <span className="tnum font-mono text-[10px] text-[var(--ink-4)]">
               {activeMonth.events.length}
             </span>
           </button>
         )}
-        <span className="ml-auto hidden pl-3 font-mono text-[10px] text-[var(--fg-4)] tabular-nums lg:inline">
+        <span className="tnum ml-auto hidden pl-3 font-mono text-[10px] text-[var(--ink-4)] lg:inline">
           {groups.reduce((n, g) => n + g.events.length, 0)} / {allModels.length}
         </span>
       </div>

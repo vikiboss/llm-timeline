@@ -36,15 +36,16 @@ export interface PriceTier {
   relative: string
 }
 
-/** 七档倍率：对数分布，覆盖 0.01× ~ 50× */
+/** 七档倍率：对数分布，覆盖 0.01× ~ 50×。
+    色阶是「冷 → 暖」的热量刻度：青 = 便宜，绿 = 合理，琥珀 → 砖红 = 昂贵。 */
 export const PRICE_TIERS: PriceTier[] = [
-  { min: 0, max: 0.05, label: '极廉价', color: '#4cc9f0', symbol: '$', relative: '仅约 1/20 价' },
-  { min: 0.05, max: 0.15, label: '很便宜', color: '#5ec8b0', symbol: '$', relative: '约 1/10 价' },
-  { min: 0.15, max: 0.4, label: '便宜', color: '#8ed36a', symbol: '$$', relative: '约 1/3 价' },
-  { min: 0.4, max: 0.9, label: '适中', color: '#c6f24e', symbol: '$$', relative: '低于基准价' },
-  { min: 0.9, max: 2.5, label: '基准价', color: '#ffd23f', symbol: '$$$', relative: '接近基准价' },
-  { min: 2.5, max: 8, label: '偏贵', color: '#ff9f45', symbol: '$$$$', relative: '基准价 2–8 倍' },
-  { min: 8, max: Infinity, label: '昂贵', color: '#ff6b6b', symbol: '$$$$$', relative: '基准价 10 倍以上' },
+  { min: 0, max: 0.05, label: '极廉价', color: 'var(--heat-1)', symbol: '$', relative: '仅约 1/20 价' },
+  { min: 0.05, max: 0.15, label: '很便宜', color: 'var(--heat-2)', symbol: '$', relative: '约 1/10 价' },
+  { min: 0.15, max: 0.4, label: '便宜', color: 'var(--heat-3)', symbol: '$$', relative: '约 1/3 价' },
+  { min: 0.4, max: 0.9, label: '适中', color: 'var(--heat-4)', symbol: '$$', relative: '低于基准价' },
+  { min: 0.9, max: 2.5, label: '基准价', color: 'var(--heat-5)', symbol: '$$$', relative: '接近基准价' },
+  { min: 2.5, max: 8, label: '偏贵', color: 'var(--heat-6)', symbol: '$$$$', relative: '基准价 2–8 倍' },
+  { min: 8, max: Infinity, label: '昂贵', color: 'var(--heat-7)', symbol: '$$$$$', relative: '基准价 10 倍以上' },
 ]
 
 export function tierOf(mult: number): PriceTier {
