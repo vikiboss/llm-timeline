@@ -1,0 +1,14 @@
+{
+  "name": "群星纪年 · 大模型发布编年史",
+  "short_name": "群星纪年",
+  "description": "大模型发布全景时间轴，收录各厂商模型发布时间，支持按公司、重要程度与输入类型筛选。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0c10",
+  "theme_color": "#0b0c10",
+  "icons": [
+    { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}

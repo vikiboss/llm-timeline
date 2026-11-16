@@ -1,0 +1,7 @@
+[
+  { "id": "text", "name": "文本", "icon": "text" },
+  { "id": "image", "name": "图像", "icon": "image" },
+  { "id": "audio", "name": "音频", "icon": "audio" },
+  { "id": "video", "name": "视频", "icon": "video" },
+  { "id": "pdf", "name": "文档", "icon": "pdf" }
+]

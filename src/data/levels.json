@@ -1,0 +1,6 @@
+[
+  { "id": "flagship", "name": "旗舰", "nameEn": "Flagship", "weight": 3 },
+  { "id": "major", "name": "重要", "nameEn": "Major", "weight": 2 },
+  { "id": "minor", "name": "常规", "nameEn": "Minor", "weight": 1 },
+  { "id": "spinoff", "name": "衍生", "nameEn": "Variant", "weight": 0 }
+]

@@ -1,0 +1,131 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  /* 扁平化设计：只保留三档小圆角 */
+  --radius-*: initial;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* ---- 色板：分层更明确的深色底，所有前景均满足 WCAG ---- */
+  --bg: #0b0c10; /* 页面底色 */
+  --surface: #14161e; /* 卡片（分层 +1，>1.05 才看得出边界） */
+  --surface-2: #1d202b; /* 次级面板 / hover */
+  --surface-3: #272b38; /* 选中态 / 内嵌块 */
+
+  /* 边框：line ≥1.6:1 可辨轮廓，line-2 ≥2.3:1 用于强调层级 */
+  --line: #333744;
+  --line-2: #464c5e;
+
+  /* 前景：fg-4 仍达 5.2:1，最小号文字也清晰 */
+  --fg: #f2f4f8;
+  --fg-2: #c3c9d5;
+  --fg-3: #9aa3b2;
+  --fg-4: #828a99;
+
+  /* 主强调色：电光青瓷，用作交互与选中态 */
+  --accent: #c6f24e;
+  --accent-ink: #10130a;
+
+  /* 分级信号色 */
+  --lv-flagship: #ffd23f;
+  --lv-major: #4cc9f0;
+  --lv-minor: #9aa3b2;
+  --lv-spinoff: #6e7686;
+
+  /* ---- 吸顶几何：全是定值，纯 CSS sticky 即可，无需 JS 测量 ----
+     header = h-14(56) + 1px 下边框 = 57
+     yearNav = 39（固定高度）
+     所有吸顶层统一 top: 96px = 57 + 39 */
+  --header-h: 57px;
+  --year-nav-h: 39px;
+  --sticky-top: 96px;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+}
+
+/* 品牌 / 模型图标：内联 SVG，颜色由 currentColor 控制 */
+.icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+.icon > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #454a58;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 细网格背景，替代原先的光晕，扁平而不空洞 */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, var(--line-2) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line-2) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 78%);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.22s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
+  }
+}

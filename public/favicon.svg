@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="群星纪年">
+  <title>群星纪年 · Chronicle of Stars</title>
+  <!--
+    记号：一条持续抬升的阶梯（时间向右，能力向上），每一级台阶 = 一次发布。
+    亮底漆色块 + 深色镂空，保证 16px 标签页里也是「亮块 + 黑色阶梯」一眼可辨。
+    配色取自站点变量：accent #c6f24e / bg #0b0c10。
+    几何全部落在 2 单位整数栅格上，任何分频尺寸都不会糊边。
+  -->
+  <rect width="64" height="64" rx="16" fill="#c6f24e"/>
+  <path
+    d="M10 44h14v-12h14V20h12"
+    fill="none"
+    stroke="#0b0c10"
+    stroke-width="12"
+    stroke-linejoin="miter"
+    stroke-linecap="butt"
+  />
+</svg>
