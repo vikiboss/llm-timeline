@@ -250,18 +250,17 @@ export function FilterPanel(props: FilterPanelProps) {
                     : 'text-[var(--ink-2)] hover:bg-[var(--sunken)] hover:text-[var(--ink)]'
                 }`}
               >
-                {/* 与列表卡同一套分级几何 */}
-                <span className="relative h-3.5 w-[10px] shrink-0 overflow-hidden rounded-[2px] bg-[var(--sunken-2)]">
-                  <span
-                    className="absolute inset-x-0"
-                    style={{
-                      background: style.signal,
-                      top: style.mark === 'solid' ? 0 : style.mark === 'dot' ? '45%' : '28%',
-                      height:
-                        style.mark === 'solid' ? '100%' : style.mark === 'dot' ? '10%' : style.mark === 'half' ? '44%' : '44%',
-                    }}
-                  />
-                </span>
+                {/* 与列表卡同一套档位：边框墨度表达重要程度 */}
+                <span
+                  aria-hidden="true"
+                  className={`h-3.5 w-[10px] shrink-0 rounded-xs ${
+                    l.id === 'spinoff' ? 'border border-dashed' : 'border'
+                  } bg-[var(--card)]`}
+                  style={{
+                    borderColor: style.chipBorder,
+                    opacity: l.id === 'minor' ? 0.75 : l.id === 'spinoff' ? 0.55 : 1,
+                  }}
+                />
                 <span className="flex-1 text-left font-medium">{l.name}</span>
                 <span className="tnum font-mono text-[10px] text-[var(--ink-4)]">{count}</span>
               </button>

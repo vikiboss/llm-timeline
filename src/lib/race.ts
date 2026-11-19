@@ -42,13 +42,10 @@ const MAINLINE: Record<string, RegExp> = {
   baidu: /^ERNIE /,
   stepfun: /^Step \d/,
   nvidia: /^Nemotron \d/,
-  cohere: /^(Command|North) /,
-  sakana: /^(Fugu|Sakana Namazu)/,
   inception: /^Mercury /,
   huawei: /^openPangu /,
   meituan: /^LongCat /,
   inclusionai: /^Ling /,
-  thinkingmachines: /^Inkling/,
 }
 
 /** 已知的双词家族名：这些前缀必须连在一起才可识别 */

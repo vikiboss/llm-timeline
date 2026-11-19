@@ -179,7 +179,7 @@ export function ReleaseHeatmap({ allModels, filtered, onJump, referenceDate }: H
                         onBlur={() => setHover(null)}
                         onClick={() => n > 0 && onJump(day.date.slice(0, 7))}
                         aria-label={`${day.date}，${n} 次发布`}
-                        className={`rounded-[3px] transition-[outline,transform] ${
+                        className={`rounded-xs transition-[outline,transform] ${
                           n > 0 ? 'cursor-pointer hover:scale-110' : 'cursor-default'
                         }`}
                         style={{
@@ -205,7 +205,7 @@ export function ReleaseHeatmap({ allModels, filtered, onJump, referenceDate }: H
           <span className="inline-flex items-center gap-1.5">
             <span className="text-[var(--ink-4)]">少</span>
             {RAMP.map((c, i) => (
-              <span key={i} className="h-2.5 w-2.5 rounded-[3px]" style={{ background: c }} />
+              <span key={i} className="h-2.5 w-2.5 rounded-xs" style={{ background: c }} />
             ))}
             <span className="text-[var(--ink-4)]">多</span>
           </span>

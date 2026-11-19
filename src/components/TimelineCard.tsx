@@ -1,6 +1,6 @@
 import { Icon } from './Icon'
 import { ModalityChip } from './ModalityIcon'
-import { categoryOf, LEVEL_STYLES } from './tokens'
+import { categoryOf, LEVEL_CARD_SHAPE, LEVEL_STYLES } from './tokens'
 import { Arrow, Pill } from './ui'
 import { blendedCost, formatCostUSD, getAnchorCost, tierOf } from '../lib/price'
 import { allModels, companyLabel, companyShortLabel } from '../lib/data'
@@ -15,8 +15,8 @@ interface TimelineCardProps {
 
 /**
  * 列表卡：一张纸质档案卡。
- * 左侧「分级尺」用几何表达重要程度（实心墨块 / 半墨 / 细线 / 虚点），
- * 因此卡片本身不需要彩虹色，整页的层次只来自墨的多少。
+ * 所有卡片的宽度与左缘完全一致（对齐优先），重要程度只由外框、底色、字号与字重表达，
+ * 不使用任何单侧色条或缩进——左右视觉永远平衡。
  */
 export function TimelineCard({ model, company, onSelect }: TimelineCardProps) {
   const level = LEVEL_STYLES[model.level]
@@ -29,38 +29,20 @@ export function TimelineCard({ model, company, onSelect }: TimelineCardProps) {
       type="button"
       onClick={() => onSelect(model)}
       className={[
-        'group relative flex w-full cursor-pointer items-stretch overflow-hidden rounded-md border text-left transition-colors',
+        'group relative flex w-full cursor-pointer items-stretch overflow-hidden border text-left transition-colors',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]',
-        isFlagship
-          ? 'border-[var(--line-ink)] bg-[var(--card)]'
-          : 'border-[var(--line)] bg-[var(--card)] hover:border-[var(--line-2)]',
+        LEVEL_CARD_SHAPE[model.level],
       ].join(' ')}
     >
-      {/* 分级尺：一条 4px 的左侧轨道。旗舰填满整高，重要填 45%，常规一根竖线 */}
-      <span aria-hidden="true" className="relative w-[4px] flex-none bg-[var(--sunken)]">
-        {level.mark === 'solid' && (
-          <span className="absolute inset-0" style={{ background: level.signal }} />
-        )}
-        {level.mark === 'half' && (
-          <span className="absolute inset-x-0 top-0 h-[45%]" style={{ background: level.signal }} />
-        )}
-        {level.mark === 'line' && (
-          <span
-            className="absolute inset-x-0 top-1/2 h-2/5 -translate-y-1/2"
-            style={{ background: level.signal }}
-          />
-        )}
-        {level.mark === 'dot' && (
-          <span className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center">
-            <span className="h-1 w-1 rounded-full" style={{ background: level.signal }} />
-          </span>
-        )}
-      </span>
-
       <div className="flex min-w-0 flex-1 items-stretch">
         <div className="flex min-w-0 flex-1 items-start gap-2.5 py-2.5 pl-2.5 sm:gap-3 sm:pl-3.5">
-          {/* 品牌图标：白底圆角块，hairline 描边 */}
-          <span className="mt-px inline-flex h-8 w-8 flex-none items-center justify-center rounded-sm border border-[var(--line)] bg-[var(--card)]">
+          {/* 品牌图标：圆角块 + hairline 描边；衍生卡在纸色底上跟纸同色 */}
+          <span
+            className={[
+              'mt-px inline-flex h-8 w-8 flex-none items-center justify-center rounded-sm border border-[var(--line)]',
+              model.level === 'spinoff' ? 'bg-[var(--card)] opacity-75' : 'bg-[var(--card)]',
+            ].join(' ')}
+          >
             <Icon
               name={model.icon ?? company?.icon ?? 'openai'}
               size={17}
@@ -73,11 +55,14 @@ export function TimelineCard({ model, company, onSelect }: TimelineCardProps) {
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-1.5">
               <h3
-                className={`min-w-0 truncate tracking-[-0.01em] ${
+                className={[
+                  'min-w-0 truncate tracking-[-0.01em]',
                   isFlagship
                     ? 'text-[14.5px] font-semibold text-[var(--ink)]'
-                    : 'text-[14px] font-medium text-[var(--ink)]'
-                }`}
+                    : model.level === 'spinoff'
+                      ? 'text-[13.5px] font-medium text-[var(--ink-2)]'
+                      : 'text-[14px] font-medium text-[var(--ink)]',
+                ].join(' ')}
                 title={model.name}
               >
                 {model.name}

@@ -176,7 +176,7 @@ export function ModelDetail({ model, company, referenceDate, onClose, onSelect }
         role="dialog"
         aria-modal="true"
         aria-labelledby="model-detail-title"
-        className="animate-sheet-up relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-xl border border-[var(--line-ink)] bg-[var(--card)] sm:max-h-[86vh] sm:w-full sm:max-w-[760px] sm:rounded-xl"
+        className="animate-sheet-up relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-lg border border-[var(--line-2)] bg-[var(--card)] sm:max-h-[86vh] sm:w-full sm:max-w-[760px] sm:rounded-lg"
       >
         <div className="flex justify-center pt-2 pb-1 sm:hidden">
           <span className="h-1 w-9 rounded-full bg-[var(--line-2)]" />
@@ -228,7 +228,7 @@ export function ModelDetail({ model, company, referenceDate, onClose, onSelect }
             {/* ── 左：身份 + 日期 ── */}
             <div className="flex flex-col gap-4 border-b border-[var(--line)] px-4 py-4 sm:justify-between sm:border-r sm:border-b-0 sm:px-6 sm:py-5">
               <div className="flex items-start gap-3.5">
-                <span className="inline-flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-md border border-[var(--line)] bg-[var(--card)] p-2">
+                <span className="inline-flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-sm border border-[var(--line)] bg-[var(--card)] p-2">
                   <Icon
                     name={model.icon ?? company?.icon ?? 'openai'}
                     size={30}

@@ -70,20 +70,13 @@ import Icon_xai from '../assets/icons/xai.svg?raw'
 import Icon_xiaomimimo from '../assets/icons/xiaomimimo.svg?raw'
 import Icon_zhipu_color from '../assets/icons/zhipu-color.svg?raw'
 import Icon_zhipu from '../assets/icons/zhipu.svg?raw'
-import Icon_cohere from '../assets/icons/cohere.svg?raw'
-import Icon_cohere_color from '../assets/icons/cohere-color.svg?raw'
 import Icon_inception from '../assets/icons/inception.svg?raw'
-import Icon_poolside from '../assets/icons/poolside.svg?raw'
-import Icon_poolside_color from '../assets/icons/poolside-color.svg?raw'
-import Icon_sakana from '../assets/icons/sakana.svg?raw'
-import Icon_sakana_color from '../assets/icons/sakana-color.svg?raw'
-import Icon_bfl from '../assets/icons/bfl.svg?raw'
-import Icon_flux from '../assets/icons/flux.svg?raw'
 import Icon_huawei from '../assets/icons/huawei.svg?raw'
 import Icon_huawei_color from '../assets/icons/huawei-color.svg?raw'
 import Icon_ibm from '../assets/icons/ibm.svg?raw'
 import Icon_ling from '../assets/icons/ling.svg?raw'
 import Icon_ling_color from '../assets/icons/ling-color.svg?raw'
+import Icon_typesafe from '../assets/icons/typesafe.svg?raw'
 
 export interface IconAsset {
   /** raw SVG string */
@@ -163,18 +156,11 @@ export const ICONS: Record<string, IconAsset> = {
   'xiaomimimo': { raw: Icon_xiaomimimo, color: false },
   'zhipu-color': { raw: Icon_zhipu_color, color: true },
   'zhipu': { raw: Icon_zhipu, color: false },
-  'cohere': { raw: Icon_cohere, color: false },
-  'cohere-color': { raw: Icon_cohere_color, color: true },
   'inception': { raw: Icon_inception, color: false },
-  'poolside': { raw: Icon_poolside, color: false },
-  'poolside-color': { raw: Icon_poolside_color, color: true },
-  'sakana': { raw: Icon_sakana, color: false },
-  'sakana-color': { raw: Icon_sakana_color, color: true },
-  'bfl': { raw: Icon_bfl, color: false },
-  'flux': { raw: Icon_flux, color: false },
   'huawei': { raw: Icon_huawei, color: false },
   'huawei-color': { raw: Icon_huawei_color, color: true },
   'ibm': { raw: Icon_ibm, color: false },
   'ling': { raw: Icon_ling, color: false },
   'ling-color': { raw: Icon_ling_color, color: true },
+  'typesafe': { raw: Icon_typesafe, color: false },
 }

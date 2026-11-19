@@ -90,7 +90,7 @@ export function IconBadge({
 }) {
   return (
     <span
-      className={`inline-flex flex-none items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--card)] ${className}`}
+      className={`inline-flex flex-none items-center justify-center rounded-sm border border-[var(--line)] bg-[var(--card)] ${className}`}
       style={{ width: size, height: size }}
     >
       <Icon

@@ -434,7 +434,7 @@ export default function App() {
             </div>
 
             {/* 三枚大数字：给整页一个“报头” */}
-            <dl className="flex shrink-0 gap-px overflow-hidden rounded-lg border border-[var(--line-ink)] bg-[var(--line-ink)]">
+            <dl className="flex shrink-0 gap-px overflow-hidden rounded-sm border border-[var(--line-2)] bg-[var(--line-2)]">
               {[
                 { k: '收录厂商', v: activeCompanies.length, u: '家' },
                 { k: '旗舰发布', v: flagshipCount, u: '次' },
@@ -457,7 +457,7 @@ export default function App() {
 
           {/* 分级快捷条：分段控件形态 */}
           <div className="relative mt-6 flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-0.5 rounded-md bg-[var(--sunken)] p-0.5">
+            <div className="flex items-center gap-0.5 rounded-sm bg-[var(--sunken)] p-0.5">
               {(Object.keys(LEVEL_STYLES) as LevelId[]).map((id) => {
                 const style = LEVEL_STYLES[id]
                 const on = selectedLevels.has(id)
@@ -504,7 +504,7 @@ export default function App() {
         </div>
 
         {/* 手机快捷分段 */}
-        <div className="mb-3 flex items-center gap-0.5 rounded-md border border-[var(--line)] bg-[var(--sunken)] p-0.5 lg:hidden">
+        <div className="mb-3 flex items-center gap-0.5 rounded-sm border border-[var(--line)] bg-[var(--sunken)] p-0.5 lg:hidden">
           <QuickSegment
             active={selectedLevels.size === 0}
             onClick={() => setSelectedLevels(new Set())}
@@ -617,7 +617,7 @@ export default function App() {
             role="dialog"
             aria-modal="true"
             aria-label="筛选"
-            className="animate-ink-in absolute inset-y-0 right-0 flex w-[90%] max-w-sm flex-col border-l border-[var(--line-ink)] bg-[var(--card)]"
+            className="animate-ink-in absolute inset-y-0 right-0 flex w-[90%] max-w-sm flex-col border-l border-[var(--line-2)] bg-[var(--card)]"
           >
             <div className="flex-none border-b border-[var(--line)] px-4 pt-3 pb-3">
               <div className="mb-3 flex items-center justify-between">

@@ -9,15 +9,21 @@
     'JetBrains Mono', ui-monospace, 'SF Mono', 'Space Grotesk', Menlo, Consolas,
     monospace;
 
-  /* 中圆角体系：最小 10px，逐级放大到 28px。扁平设计不靠阴影，
-     层级全部由「边框 + 留白 + 底色差」表达。 */
+  /* ---- 圆角规范：扁平 + 小圆角，圆角半径永远小于元素短边的一半，
+     逐档只服务一种元素尺度，不做审美性的“更圆”。
+       2px  微痕迹：热力格、时间轴柱
+       6px  内联标记：等级标 / 分类标 / 徽标（字号 9–11px）
+       8px  控件：按钮、输入框、分段器、列表行
+       10px 容器：面板、工具条、弹层
+       12px 画布级容器：大卡片、抽屉、空状态
+     上限 12px。 ---- */
   --radius-*: initial;
-  --radius-xs: 8px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
-  --radius-2xl: 28px;
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 12px;
+  --radius-2xl: 12px;
 }
 
 :root {

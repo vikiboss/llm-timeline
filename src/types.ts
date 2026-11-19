@@ -11,6 +11,7 @@ export type CategoryId =
   | 'world'
   | 'speech'
   | 'embedding'
+  | 'decision'
 
 /** 时间轴上的单个模型发布事件 */
 export interface Model {
@@ -44,6 +45,11 @@ export interface Company {
   id: string
   name: string
   nameZh: string
+  /**
+   * 列表 / 卡片场景的短名，缺省时由 companyShortLabel 推导。
+   * 仅当自动推导会丢信息（如两段都是中文）时才需要显式声明。
+   */
+  shortNameZh?: string
   country: string
   website: string
   icon: string

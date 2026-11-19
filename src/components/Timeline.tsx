@@ -97,8 +97,8 @@ export function Timeline({ groups, companyOf, onSelect, onReset, renderNav }: Ti
 
   if (groups.length === 0) {
     return (
-      <div className="flex min-h-[480px] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--line-2)] bg-[var(--card)] px-6 py-16 text-center">
-        <span className="grid h-11 w-11 place-items-center rounded-lg bg-[var(--sunken)] text-[var(--ink-4)]">
+      <div className="flex min-h-[480px] flex-col items-center justify-center rounded-lg border border-dashed border-[var(--line-2)] bg-[var(--card)] px-6 py-16 text-center">
+        <span className="grid h-11 w-11 place-items-center rounded-md bg-[var(--sunken)] text-[var(--ink-4)]">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M4 7h16M4 12h10M4 17h13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           </svg>

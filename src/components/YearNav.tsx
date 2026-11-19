@@ -59,7 +59,7 @@ export function YearNav({ groups, allModels, onJump, retracted, activeMonth }: Y
         </span>
 
         {/* 年份：连成一枚分段控件 */}
-        <div className="flex items-center gap-1 rounded-md bg-[var(--sunken)] p-0.5">
+        <div className="flex items-center gap-1 rounded-sm bg-[var(--sunken)] p-0.5">
           {years.map((y) => {
             const has = visibleYears.has(y)
             const active = activeYear === y

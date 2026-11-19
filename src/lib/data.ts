@@ -18,6 +18,7 @@ export const categories: Category[] = [
   { id: 'world', name: '世界模型', nameEn: 'World' },
   { id: 'speech', name: '语音', nameEn: 'Speech' },
   { id: 'embedding', name: '向量', nameEn: 'Embedding' },
+  { id: 'decision', name: '决策', nameEn: 'Decision' },
 ]
 
 const companyMap = new Map(companies.map((c) => [c.id, c]))
@@ -39,37 +40,50 @@ export function companyLabel(company: Company | undefined, fallback = '未知'):
 }
 
 /**
+ * 国内厂商默认名（拉丁品牌名，小写）——即使用户更熟悉品牌，也优先用中文。
+ * 例：DeepSeek 用「DeepSeek」（公司仍叫深度求索）、MiniMax 用「MiniMax」。
+ * 不在表内的中文厂商按「中文优先 + 知名度」取段，通常就是公司名本身。
+ */
+const LATIN_FIRST = new Set(['deepseek', 'minimax'])
+
+/**
  * 列表场景的短名。两段式 nameZh 常把「公司名 + 产品品牌」并列，
  * 窄列里容易被截成「深度求索 De…」，所以在这里挑一段显示。
  *
- * 规则：产品品牌优先——用户谈模型时说「Kimi」「GLM」「MiMo」，很少说「月之暗面」。
- * 因此维护一份显式的品牌前缀白名单，而不是靠字符长度猜。
+ * 原则：尊重原名——不改写、不音译、不造词，优先用数据里真实写过的名字。
+ * 国内厂商按「中文优先 + 知名度」取值（蚂蚁 / 腾讯 / 通义千问 / 文心 …），
+ * 只有品牌名本身更响且无需翻译时才保留拉丁（DeepSeek / MiniMax）。
+ *
+ * 优先级：
+ * 1. companies.json 显式声明的 shortNameZh —— 唯一权威来源；
+ * 2. 名称本身就是单段 / 纯拉丁 → 原样返回，不做任何缩写；
+ * 3. 两段式「中文 + 拉丁」→ 中文厂商取中文段（多段时取最短、最知名的那段），
+ *    仅当拉丁品牌属于 LATIN_FIRST 时才保留拉丁；
+ * 4. 其余混合情况 → 保留全名（宁长勿错）。
  */
-const BRAND_FIRST = new Set([
-  'kimi',
-  'glm',
-  'mimo',
-  'longcat',
-  'ling',
-  'step',
-  'ernie',
-  'hunyuan',
-  'qwen',
-  'doubao',
-  'pangu',
-])
-
 export function companyShortLabel(company: Company | undefined, fallback = '未知'): string {
+  if (!company) return fallback
   const full = companyLabel(company, fallback)
-  const parts = full.split(/\s+/)
+
+  const declared = company.shortNameZh?.trim()
+  if (declared) return declared
+
+  const parts = full.split(/\s+/).filter(Boolean)
   if (parts.length < 2) return full
+
   const cjk = parts.filter((p) => /[\u4e00-\u9fa5]/.test(p))
   const latin = parts.filter((p) => /[A-Za-z]/.test(p))
+
+  // 纯拉丁名称（OpenAI / Mistral AI）：原样保留，避免凭空缩写
+  if (cjk.length === 0) return full
   // 两段都是中文（腾讯 混元）：短名更含糊，保留全名
-  if (cjk.length === 0 || latin.length === 0) return full
+  if (latin.length === 0) return full
+
   const brand = latin.join(' ')
-  if (BRAND_FIRST.has(brand.toLowerCase())) return brand
-  const zh = cjk.join(' ')
+  if (LATIN_FIRST.has(brand.toLowerCase())) return brand
+
+  // 中文厂商：取最短的中文段（通常是公司/品牌本身），再长就保留全名
+  const zh = cjk.reduce((a, b) => (b.length < a.length ? b : a))
   return zh.length >= 2 ? zh : brand
 }
 

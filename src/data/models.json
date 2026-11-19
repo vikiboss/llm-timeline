@@ -253,24 +253,6 @@
       "icon": "ling"
     },
     {
-      "id": "thinkingmachines-inkling-2-small",
-      "name": "Inkling 2 Small",
-      "company": "thinkingmachines",
-      "releaseDate": "2026-11-05",
-      "inputs": [
-        "text",
-        "image"
-      ],
-      "category": "chat",
-      "level": "major",
-      "icon": "bfl",
-      "cost": {
-        "input": 0.3,
-        "output": 1,
-        "cacheRead": 0.03
-      }
-    },
-    {
       "id": "hy4",
       "name": "Hy4",
       "company": "tencent",
@@ -531,6 +513,24 @@
         "input": 1.125,
         "output": 3.825,
         "cacheRead": 0.135
+      }
+    },
+    {
+      "id": "typesafe-jev-1-14",
+      "name": "Jev 1.14",
+      "company": "typesafe",
+      "releaseDate": "2026-10-14",
+      "inputs": [
+        "text",
+        "image"
+      ],
+      "category": "decision",
+      "level": "minor",
+      "icon": "typesafe",
+      "note": "System One 决策模型：对共享状态做类型化提问，返回选项、评分与布尔概率；支持分类、路由、评分量表与自动核验，单请求可并行评估多个问题。64K 上下文，$0.042／百万输入 token",
+      "cost": {
+        "input": 0.042,
+        "output": 0
       }
     },
     {
@@ -916,6 +916,24 @@
       "category": "chat",
       "level": "minor",
       "icon": "doubao"
+    },
+    {
+      "id": "typesafe-jev-1-13",
+      "name": "Jev 1.13",
+      "company": "typesafe",
+      "releaseDate": "2026-09-15",
+      "inputs": [
+        "text",
+        "image"
+      ],
+      "category": "decision",
+      "level": "major",
+      "icon": "typesafe",
+      "note": "首个公开版本，System One 决策模型，输出结构化选项／评分／概率而非自由文本",
+      "cost": {
+        "input": 0.042,
+        "output": 0
+      }
     },
     {
       "id": "deepseek-v4.1-flash",
@@ -1402,25 +1420,6 @@
       }
     },
     {
-      "id": "sakana-namazu",
-      "name": "Sakana Namazu",
-      "company": "sakana",
-      "releaseDate": "2026-08-03",
-      "inputs": [
-        "text",
-        "image",
-        "pdf"
-      ],
-      "category": "chat",
-      "level": "major",
-      "icon": "sakana",
-      "cost": {
-        "input": 0.95,
-        "output": 4,
-        "cacheRead": 0.15
-      }
-    },
-    {
       "id": "qwen3.8-max",
       "name": "Qwen 3.8 Max",
       "company": "alibaba",
@@ -1603,19 +1602,6 @@
       "icon": "gemini"
     },
     {
-      "id": "poolside-laguna-s-2-1",
-      "name": "Laguna S 2.1",
-      "company": "poolside",
-      "releaseDate": "2026-07-21",
-      "inputs": [
-        "text"
-      ],
-      "category": "code",
-      "level": "flagship",
-      "icon": "poolside",
-      "note": "代码专用模型，104 万 token 上下文"
-    },
-    {
       "id": "kimi-k3",
       "name": "Kimi K3",
       "company": "moonshot",
@@ -1632,26 +1618,6 @@
         "input": 3,
         "output": 15,
         "cacheRead": 0.3
-      }
-    },
-    {
-      "id": "thinkingmachines-inkling",
-      "name": "Inkling",
-      "company": "thinkingmachines",
-      "releaseDate": "2026-07-15",
-      "inputs": [
-        "text",
-        "image",
-        "audio"
-      ],
-      "category": "chat",
-      "level": "flagship",
-      "icon": "bfl",
-      "note": "原生多模态，支持图像与音频输入",
-      "cost": {
-        "input": 0.95,
-        "output": 4.05,
-        "cacheRead": 0.16
       }
     },
     {
@@ -1935,25 +1901,6 @@
       }
     },
     {
-      "id": "sakana-fugu-ultra",
-      "name": "Fugu Ultra",
-      "company": "sakana",
-      "releaseDate": "2026-06-15",
-      "inputs": [
-        "text",
-        "image"
-      ],
-      "category": "chat",
-      "level": "flagship",
-      "icon": "sakana",
-      "note": "100 万 token 上下文，主打多智能体编排",
-      "cost": {
-        "input": 5,
-        "output": 30,
-        "cacheRead": 0.5
-      }
-    },
-    {
       "id": "kimi-k2.7-code",
       "name": "Kimi K2.7 Code",
       "company": "moonshot",
@@ -2207,24 +2154,6 @@
       }
     },
     {
-      "id": "cohere-command-a-plus",
-      "name": "Command A Plus",
-      "company": "cohere",
-      "releaseDate": "2026-05-20",
-      "inputs": [
-        "text",
-        "image"
-      ],
-      "category": "chat",
-      "level": "flagship",
-      "icon": "cohere",
-      "note": "Cohere 企业级旗舰，128K 上下文，主推多语言 RAG",
-      "cost": {
-        "input": 2.5,
-        "output": 10
-      }
-    },
-    {
       "id": "gemini-3.5-flash",
       "name": "Gemini 3.5 Flash",
       "company": "google",
@@ -2301,18 +2230,6 @@
         "output": 0.24,
         "cacheRead": 0.06
       }
-    },
-    {
-      "id": "poolside-laguna-m-1",
-      "name": "Laguna M.1",
-      "company": "poolside",
-      "releaseDate": "2026-04-28",
-      "inputs": [
-        "text"
-      ],
-      "category": "code",
-      "level": "major",
-      "icon": "poolside"
     },
     {
       "id": "qwen3.6-flash",
@@ -3214,20 +3131,6 @@
         "output": 0.4,
         "cacheRead": 0.01
       }
-    },
-    {
-      "id": "bfl-flux-2-klein-4b",
-      "name": "FLUX.2 Klein 4B",
-      "company": "black-forest-labs",
-      "releaseDate": "2026-01-15",
-      "inputs": [
-        "text",
-        "image"
-      ],
-      "category": "image",
-      "level": "major",
-      "icon": "flux",
-      "note": "FLUX.2 系列开源图像生成，4B 轻量版"
     },
     {
       "id": "minimax-m2.1",
@@ -4712,19 +4615,6 @@
       "icon": "grok"
     },
     {
-      "id": "bfl-flux-1-schnell",
-      "name": "FLUX.1-schnell",
-      "company": "black-forest-labs",
-      "releaseDate": "2024-08-01",
-      "inputs": [
-        "text"
-      ],
-      "category": "image",
-      "level": "flagship",
-      "icon": "flux",
-      "note": "4 步出图的开源图像生成里程碑"
-    },
-    {
       "id": "llama-3.1-405b",
       "name": "Llama 3.1 405B",
       "company": "meta",
@@ -5044,7 +4934,7 @@
     },
     {
       "id": "ernie-bot",
-      "name": "ERNIE Bot (文心一言)",
+      "name": "ERNIE Bot (文心)",
       "company": "baidu",
       "releaseDate": "2023-03-16",
       "inputs": [

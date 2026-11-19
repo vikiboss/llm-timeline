@@ -19,7 +19,7 @@ export function Panel({
   return (
     <section
       aria-label={label}
-      className={`overflow-hidden rounded-lg border border-[var(--line-ink)] bg-[var(--card)] sm:rounded-xl ${className}`}
+      className={`overflow-hidden rounded-sm border border-[var(--line-2)] bg-[var(--card)] ${className}`}
     >
       {children}
     </section>
