@@ -1,6 +1,6 @@
 import type { Model } from '../types'
 import dataset from '../data/models.json'
-import { parseDate } from './timeline'
+import { parseDate, todayIso } from './timeline'
 
 export interface RaceLane {
   company: string
@@ -68,8 +68,8 @@ function familyName(sorted: Model[]): string {
 export function buildRaceLanes(
   models: Model[],
   rankOf: (id: string) => number,
-  /** 参考日期（YYYY-MM-DD），默认取数据集 lastUpdated */
-  referenceDate: string = dataset.lastUpdated,
+  /** 参考日期（YYYY-MM-DD），默认取真实今天（不早于数据集 lastUpdated） */
+  referenceDate: string = todayIso() > dataset.lastUpdated ? todayIso() : dataset.lastUpdated,
 ): RaceLane[] {
   const refMs = parseDate(referenceDate)
   const byCompany = new Map<string, Model[]>()

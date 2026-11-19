@@ -21,10 +21,13 @@ import {
   modalities,
 } from './lib/data'
 import { parseHash, serializeHash, type ViewState } from './lib/routing'
-import { filterModels, groupByMonth, sortByDateDesc } from './lib/timeline'
+import { filterModels, groupByMonth, sortByDateDesc, todayIso } from './lib/timeline'
 import type { CategoryId, LevelId, ModalityId, Model } from './types'
 
-const REFERENCE_DATE = dataset.lastUpdated
+/** 数据集的收录截止日（仅用于展示「数据更新」） */
+const DATA_DATE = dataset.lastUpdated
+/** 相对时间的参照日：真实今天，取今天与数据日两者较大者，避免未来发布被算成负数 */
+const REFERENCE_DATE = todayIso() > DATA_DATE ? todayIso() : DATA_DATE
 
 function toggle<T>(set: Set<T>, value: T): Set<T> {
   const next = new Set(set)
@@ -419,7 +422,7 @@ export default function App() {
                 </span>
                 <span className="h-px w-6 bg-[var(--line-2)]" />
                 <span className="tnum font-mono tracking-[0.04em] text-[var(--ink-4)]">
-                  {REFERENCE_DATE.slice(0, 4)}
+                  {DATA_DATE.slice(0, 4)}
                 </span>
                 <span className="ml-1">大模型发布编年史</span>
               </div>
@@ -438,7 +441,7 @@ export default function App() {
               {[
                 { k: '收录厂商', v: activeCompanies.length, u: '家' },
                 { k: '旗舰发布', v: flagshipCount, u: '次' },
-                { k: '数据更新', v: dataset.lastUpdated.slice(5).replace('-', '/'), u: '' },
+                { k: '数据更新', v: DATA_DATE.slice(5).replace('-', '/'), u: '' },
               ].map((x) => (
                 <div key={x.k} className="flex-1 bg-[var(--card)] px-4 py-3 lg:min-w-[104px]">
                   <dt className="text-[9.5px] font-medium tracking-[0.08em] text-[var(--ink-4)] uppercase">
@@ -574,7 +577,7 @@ export default function App() {
               </div>
               <p className="mt-2 max-w-[300px] text-[11px] leading-relaxed text-[var(--ink-3)]">
                 所有时间、价格与分级均来自公开公告与 models.dev。
-                数据更新即基准日，页面上的「相对时间」以此为准。
+                「相对时间」按真实今天计算，数据更新日为 {DATA_DATE}。
               </p>
             </div>
             <div className="flex flex-wrap gap-x-8 gap-y-3 font-mono text-[10.5px] text-[var(--ink-4)]">

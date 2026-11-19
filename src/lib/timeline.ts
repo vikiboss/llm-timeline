@@ -43,14 +43,24 @@ export function formatFullDate(date: string): string {
   return `${y} 年 ${Number(m)} 月 ${Number(d)} 日`
 }
 
-/** 距今天数（以数据基准日为参照） */
+/** 本地「今天」的 YYYY-MM-DD（不受时区/UTC 偏移影响） */
+export function todayIso(): string {
+  const d = new Date()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
+/** 距参照日的天数：reference 晚于 date 为正数 */
 export function daysSince(date: string, reference: string): number {
   return Math.round((parseDate(reference) - parseDate(date)) / 86_400_000)
 }
 
 export function relativeTime(date: string, reference: string): string {
   const days = daysSince(date, reference)
-  if (days <= 0) return '今天'
+  // 未来日期（尚未发布）不做相对描述，直接给绝对日期
+  if (days < 0) return formatDate(date)
+  if (days === 0) return '今天'
   if (days === 1) return '昨天'
   if (days < 7) return `${days} 天前`
   if (days < 30) return `${Math.round(days / 7)} 周前`
