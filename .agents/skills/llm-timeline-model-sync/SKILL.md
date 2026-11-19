@@ -19,6 +19,7 @@ description: Fetch and update the LLM release timeline dataset (src/data/models.
 约 330 provider / 9,900 模型。**不要**爬官网，**不要**用搜索摘要当日期来源。
 
 > 全流程只用**一个**快照 `/tmp/models-dev.json`，所有脚本从这里读，别再复制第二份。
+> 日期窗口一律从数据集现读 `lastUpdated`，**脚本里不要写死上界**（会随同步过期）。
 
 ## 步骤 1：拉取快照
 
@@ -29,33 +30,47 @@ curl -s --noproxy '*' --max-time 30 -o /tmp/models-dev.json https://models.dev/a
 
 `--noproxy '*'` **必须加**（本机有 HTTP 代理变量，不加会挂住）。失败重试 2 次即放弃。
 
-## 步骤 2：抽取候选
+## 步骤 2：抽取候选（**先按 `canonical_model_id` 归并，再排除**）
+
+关键：**模型身份 = `canonical_model_id`**，不是 provider、也不是 name。
+因为第一方 provider 会**漏收**自家新模型，模型只存在于转售平台。
+（实例：腾讯 `tencent-tokenhub` 里没有 `hy4-flash`，只有 12 家转售商挂着它。）
+若先按 provider 排除转售商，会把模型本体一起误杀。
 
 ```bash
 node -e '
 const d=require("/tmp/models-dev.json");
-const SINCE="2026-08-01";                  // 增量同步取上次 lastUpdated 前一周
-const out=new Map();
-for(const p of Object.keys(d)) for(const m of Object.values(d[p].models||{})){
+const last=require("./src/data/models.json").lastUpdated;
+const SINCE=new Date(Date.parse(last)-7*864e5).toISOString().slice(0,10); // 上次同步前一周
+const g=new Map();
+for(const pid of Object.keys(d)) for(const m of Object.values(d[pid].models||{})){
   const dt=m.release_date||"";
-  if(dt<SINCE || dt>"2026-11-16") continue;  // 上界 = 数据集 lastUpdated
-  if(dt.startsWith("1970")) continue;        // 已知脏数据
-  const k=m.name.toLowerCase(); if(out.has(k)) continue;
-  out.set(k,[dt,m.name,p]);
+  if(dt<SINCE || dt>last || dt.startsWith("1970")) continue;
+  const k=(m.canonical_model_id||m.id||m.name).toLowerCase();
+  (g.get(k)??g.set(k,[]).get(k)).push({dt,name:m.name,pid});
 }
-[...out.values()].sort((a,b)=>a[0].localeCompare(b[0]))
-  .forEach(r=>console.log(r.join(" | ")));
+[...g.entries()].map(([k,v])=>[v.map(x=>x.dt).sort()[0], v[0].name, v.length, k]) // 多来源取最早日期
+  .sort((a,b)=>a[0].localeCompare(b[0]))
+  .forEach(r=>console.log(r[0],"|",r[1],"|",r[2]+"家","|",r[3]));
 '
 ```
 
-输出里绝大多是噪音，**依次排除**后才进入步骤 3：
+按**模型身份**排除，而不是按 provider：
 
-1. 纯转售平台副本（`openrouter` / `vercel` / `kilo` / `nano-gpt` / `edenai` / `opencode*` / `llmgateway*` …）
+1. 无 `canonical_model_id` 且仅转售商收录 → 无归属，丢弃
 2. 变体别名：`* Uncensored`、`* Abliterated`、`* (free)`、`*-latest`、`*-preview`、`(US)`/`(EU)` 后缀
 3. 补丁号：`Mistral Large 4.0.8` 与 `4` 是同一模型
-4. 剩余第一方条目用 `canonical_model_id` 确认归属，再判断价值
+4. 剩下的用 `canonical_model_id` 前缀定归属，再判断价值
 
-经验：半个月约 99 条候选，真缺口通常只有 **1~2 个**；没有缺口是正常结果，别硬凑。
+> 转售商数量是**信号不是噪音**：一个模型被 10+ 家挂出、本库却没有 → 大概率是真缺口。
+> 只被 1~2 家、名字像内部代号（`Ousia 1`、`Flint`、`Sparrow Auto`）→ 多为平台自建，跳过。
+
+经验：半个月约 100~120 条原始候选 → 按 canonical 归并后约 30~40 个真模型 → 真缺口通常 **1~3 个**；
+没有缺口是正常结果，别硬凑。
+
+**上界要留意**：快照可能比数据集 `lastUpdated` 更新，出现其后的条目是**正常的**
+（实例：GPT 6.2 Astra/Sol 2026-11-17、Gemini 4 Neon 2026-11-18）。这些是真新发布，收进来并把
+`lastUpdated` 推进到最新条目日期即可，别当脏数据丢掉。
 
 ## 步骤 3：人工判断（关键，不能省）
 
@@ -63,7 +78,7 @@ for(const p of Object.keys(d)) for(const m of Object.values(d[p].models||{})){
 - **`inputs`**：只能用 `text`/`image`/`audio`/`video`/`pdf`，**不要新增值**（否则 UI 空图标）。视频写 `video`，不要 `file`/`document`。新增模态需先改 `src/data/modalities.json` + 补 SVG。
 - **`note`**：只写有明确事实的（参数量、上下文、首发特性），宁可留空不要编。
 - **`category`**：默认 `chat`，另有 `image`/`video`/`audio`/`speech`/`code`。
-- **`icon`**：复用同公司既有值——`node -e 'console.log(require("./src/data/models.json").models.filter(m=>m.company==="alibaba").map(m=>m.icon))'`
+- **`icon`**：复用同公司既有值，**不要拿 company id 想当然**——`node -e 'console.log([...new Set(require("./src/data/models.json").models.filter(m=>m.company==="tencent").map(m=>m.icon))]'` 输出 `['hunyuan']`，不是 `tencent`。缺 icon 会渲染空白。
 - **`id`**：kebab-case 且全局唯一，沿用项目风格（`qwen-4-max` 而非 `qwen4-max`）。
 
 日期用 `models.dev` 的 `release_date`；若官方首发日更早（收录延迟）以官方为准，并注明。
@@ -79,13 +94,16 @@ const has=new Set(d.models.map(m=>m.id));
 const fresh=add.filter(m=>!has.has(m.id));
 d.models.push(...fresh);
 d.models.sort((a,b)=>b.releaseDate.localeCompare(a.releaseDate));
+d.lastUpdated=fresh.reduce((a,m)=>m.releaseDate>a?m.releaseDate:a,d.lastUpdated);
 fs.writeFileSync(p, JSON.stringify(d,null,2)+"\n");
-console.log("added",fresh.length,"| total",d.models.length);
+console.log("added",fresh.length,"| total",d.models.length,"| lastUpdated",d.lastUpdated);
 '
 ```
 
 - JSON 里字段名是 **`releaseDate`**（`YYYY-MM-DD` 字符串），不是 API 的 `release_date`。
 - 保持 `releaseDate` 倒序，diff 才只有新增块。除 `lastUpdated` 外不要动元数据。
+- `lastUpdated` 要随新增条目推进，否则下次同步的窗口会漏掉它们。
+- 收尾 `git diff --stat` 自检：应只有 `lastUpdated` 一行 + 新增块；出现其它改动说明误改了旧数据。
 
 ## 步骤 4.5：补充价格（可选但推荐）
 
@@ -119,6 +137,8 @@ console.log("cost covered",hit,"/",mine.filter(m=>m.cost).length,"of",mine.lengt
 
 - 写进 `cost` 对象 `{input, output, cacheRead?}`，类型见 `src/types.ts`。
 - 覆盖率约 **70%**，缺的多是按张/秒计价的图像视频音频与极新模型，属正常。
+- **第一方没定价就留空**。转售商价格常差 2~3 倍（实例：`hy4-flash` 在 openrouter 报 0.035/0.1405，
+  crossmodel 报 0.08/0.32），即使比例看起来一致也**不能按比例倒推**官方价——那是估算。留空优于填一个「看起来合理」的数字。
 - **倍率在 UI 端算**（`src/lib/price.ts`），不要写死进 JSON：混合成本 = `input × 3 + output`，锚点 `GPT 5.2` = 1×，七档 极廉→昂贵。改锚点需同步 `ANCHOR_NAME`。
 
 ## 步骤 5：覆盖度审计
@@ -137,7 +157,8 @@ for(const [c,l] of Object.entries(by)){
 
 偏晚的按步骤 3 补历史锚点（如 GPT-2 2019、Claude 1 2023-03）。
 
-**5b. 逐家比对**——用第一方 provider 做基准，只认第一方：
+**5b. 逐家比对**——以第一方 provider 为基准；但**第一方会漏收自家模型**，
+所以 5b 报「零新增」不等于真没有，必须配 5c 交叉验证。
 
 ```bash
 node -e '
@@ -168,8 +189,40 @@ for(const [c,pids] of Object.entries(FIRST)){
 - 归属存疑时看 `canonical_model_id` 一锤定音。
 - `baidu` / `inclusionai` / `liquid` 等**没有**第一方 provider，此审计无效，只能人工核对官方公告。
 
+**5c. 反向交叉验证（必做，专门堵 5b 的盲区）**——找出「本库没有、但多家转售商收录」的模型。
+这是发现 `hy4-flash` 这类缺口的手段（5b 对它完全无感）。
+
+```bash
+node -e '
+const d=require("/tmp/models-dev.json");
+const models=require("./src/data/models.json").models;
+const norm=s=>s.toLowerCase().replace(/[^a-z0-9]/g,"");
+const mineN=new Set(models.map(x=>norm(x.name)));
+const last=require("./src/data/models.json").lastUpdated;
+const g=new Map();
+for(const pid of Object.keys(d)) for(const m of Object.values(d[pid].models||{})){
+  const dt=m.release_date||""; if(dt<last||dt.startsWith("1970")) continue;
+  const cid=m.canonical_model_id||"";
+  if(!cid||mineN.has(norm(m.name))) continue;
+  (g.get(cid)??g.set(cid,[]).get(cid)).push({dt,name:m.name,pid});
+}
+[...g.entries()].filter(([,v])=>v.length>=3)      // 3+ 家收录才看
+  .sort((a,b)=>b[1].length-a[1].length)
+  .forEach(([cid,v])=>{
+    // 优先展示不带 (free)/Uncensored 等后缀的代表名
+    const clean=v.find(x=>!/free|uncensored|abliterated|\(/i.test(x.name))??v[0];
+    console.log(String(v.length).padStart(3),"家 |",cid,"|",clean.name,"|",clean.dt);
+  });
+'
+```
+
+- 转售商数多 + `canonical_model_id` 前缀是已知厂商 → 大概率真缺口，进步骤 3。
+- 前缀陌生、名字像代号 → 跳过。
+- 空输出 = 本库已追上快照，是**正常结果**。
+
 剩余未收录通常可放过：`*-latest`/`*-preview` 别名、尺寸变体（`8B`/`A22B`/`mini`/`nano`）、
-embedding/rerank/语音等基础设施模型。**真缺口特征**：起始日期明显偏晚，或条目数远低于同行。
+embedding/rerank/语音等基础设施模型。**真缺口特征**：起始日期明显偏晚、条目数远低于同行，
+或 5c 报出多家转售商收录而本库缺失。
 
 ## 步骤 6：验证
 
@@ -191,6 +244,7 @@ console.log(hit.length,"条命中；最新：",hit.at(-1)?.name);'
 
   最新一条必须是刚添加的旗舰，否则把版本号范围扩一位。
 - 新增厂商时同步 `src/data/companies.json`（缺 icon 会渲染空白）+ `MAINLINE` 加一条正则。
+- `pnpm build` 的「chunk > 500 kB」警告是既有的，**不是**本次改动引入，忽略即可。
 
 ## 不要做的事
 
@@ -199,3 +253,6 @@ console.log(hit.length,"条命中；最新：",hit.at(-1)?.name);'
 - ❌ 把同一模型的不同 provider 副本当多条记录。
 - ❌ 虚构旗舰或补假日期来让图好看。
 - ❌ 为了「有产出」硬凑条目。
+- ❌ 按 provider 名字过滤转售商再做归属——会误杀只在转售商出现的第一方模型。先按 `canonical_model_id` 归并。
+- ❌ 看到 `lastUpdated` 之后的日期就当脏数据丢掉——那可能是快照更新后的真新发布。
+- ❌ 用转售商价格比例倒推官方价——取不到就留空。

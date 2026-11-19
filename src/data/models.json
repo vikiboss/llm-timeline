@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-11-16",
+  "lastUpdated": "2026-11-18",
   "sources": [
     "https://models.dev/api.json",
     "https://openai.com/news",
@@ -15,6 +15,68 @@
     "https://ai.meta.com/blog"
   ],
   "models": [
+    {
+      "id": "gemini-4-neon",
+      "name": "Gemini 4 Neon",
+      "company": "google",
+      "releaseDate": "2026-11-18",
+      "inputs": [
+        "text",
+        "image",
+        "audio",
+        "video",
+        "pdf"
+      ],
+      "category": "chat",
+      "level": "flagship",
+      "icon": "gemini",
+      "note": "四档思考深度，100 万 token 上下文，面向编码、知识工作与科研",
+      "cost": {
+        "input": 3,
+        "output": 15,
+        "cacheRead": 0.15
+      }
+    },
+    {
+      "id": "gpt-6.2-astra",
+      "name": "GPT 6.2 Astra",
+      "company": "openai",
+      "releaseDate": "2026-11-17",
+      "inputs": [
+        "text",
+        "image",
+        "pdf"
+      ],
+      "category": "chat",
+      "level": "flagship",
+      "icon": "openai",
+      "note": "105 万 token 上下文，面向编码、Computer Use 与文档办公的前沿推理模型",
+      "cost": {
+        "input": 8,
+        "output": 40,
+        "cacheRead": 0.4
+      }
+    },
+    {
+      "id": "gpt-6.2-sol",
+      "name": "GPT 6.2 Sol",
+      "company": "openai",
+      "releaseDate": "2026-11-17",
+      "inputs": [
+        "text",
+        "image",
+        "pdf"
+      ],
+      "category": "chat",
+      "level": "flagship",
+      "icon": "openai",
+      "note": "同日发布的轻量档，主打日常办公、多步 Agent 工作流与编码",
+      "cost": {
+        "input": 2,
+        "output": 10,
+        "cacheRead": 0.1
+      }
+    },
     {
       "id": "qwen-4-max",
       "name": "Qwen 4 Max",
@@ -34,6 +96,19 @@
         "output": 4.5,
         "cacheRead": 0.075
       }
+    },
+    {
+      "id": "hy4-flash",
+      "name": "Hy4 Flash",
+      "company": "tencent",
+      "releaseDate": "2026-11-16",
+      "inputs": [
+        "text",
+        "image"
+      ],
+      "category": "chat",
+      "level": "minor",
+      "icon": "hunyuan"
     },
     {
       "id": "gemini-4-hydrogen",
